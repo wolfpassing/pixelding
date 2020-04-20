@@ -15,6 +15,12 @@ const OutOfBoundsError = "out of bounds"
 const AlreadySetError = "already set"
 const DimensionError = "dimension error"
 
+//todo Screen Trim Nur ausgeben was wirklich da ist
+//todo Return Screen als String Array
+//todo Clear Screen
+//todo Stamp Bitmuster
+//todo Font?
+
 type PixelDing struct {
 	init    bool
 	matrix  [][]bool
@@ -107,6 +113,17 @@ func (p *PixelDing) Display() {
 		fmt.Println()
 	}
 }
+
+func (p *PixelDing) Clear() {
+
+	p.matrix = make([][]bool, p.y)
+
+	for i := range p.matrix {
+		p.matrix[i] = make([]bool, p.x)
+	}
+
+}
+
 
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDing) check(x, y int) bool {
