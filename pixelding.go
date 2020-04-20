@@ -15,9 +15,9 @@ const OutOfBoundsError = "out of bounds"
 const AlreadySetError = "already set"
 const DimensionError = "dimension error"
 
+const RegSplitter = "[MmLlHhVvZzCc]|[+-]?\\d+\\.\\d+|[+-]?\\d+|[+-]?\\.\\d+"
+
 //todo Screen Trim Nur ausgeben was wirklich da ist
-//todo Return Screen als String Array
-//todo Clear Screen
 //todo Stamp Bitmuster
 //todo Font?
 
@@ -32,6 +32,7 @@ type PixelDing struct {
 	invert  bool
 	toggle  bool
 	render  int
+	buffer  []string
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -67,7 +68,28 @@ func (p *PixelDing) Aspect(x, y int) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDing) Stamp(x, y int, stamp []uint64) {
+	var j int
+	for i, v := range stamp {
+		j = 0
+		for xx := uint64(0x8000000000000000); xx > 0; xx = xx >> 1 {
+			if v&xx != 0 {
+				p.setPixel(x+j, y+i, true)
+			}
+			j++
+		}
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDing) Display() {
+	for _, b := range p.buffer {
+		fmt.Println(b)
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDing) Render() []string {
 	cox := []string{
 		string(32),     // 0
 		string(0x2597), // 1
@@ -86,14 +108,14 @@ func (p *PixelDing) Display() {
 		string(0x259B), // 14
 		string(0x2588), // 15
 	}
+	p.buffer = []string{}
+	lo := ""
 	cmp := true
 	if p.invert {
 		cmp = !cmp
 	}
 	for y := 0; y < p.y-1; y = y + 2 - p.aspectY {
-		if p.debug {
-			fmt.Print(fmt.Sprintf("%03d", y))
-		}
+		lo = ""
 		for x := 0; x < p.x-1; x = x + 2 - p.aspectX { // = x + 2 {
 			bit := 0
 			if p.getPixel(x, y) == cmp {
@@ -108,22 +130,20 @@ func (p *PixelDing) Display() {
 			if p.getPixel(x+1, y+1) == cmp {
 				bit += 1
 			}
-			fmt.Print(cox[bit])
+			lo = lo + cox[bit]
 		}
-		fmt.Println()
+		p.buffer = append(p.buffer, lo)
 	}
+	return p.buffer
 }
 
+//----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDing) Clear() {
-
 	p.matrix = make([][]bool, p.y)
-
 	for i := range p.matrix {
 		p.matrix[i] = make([]bool, p.x)
 	}
-
 }
-
 
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDing) check(x, y int) bool {
@@ -214,24 +234,21 @@ func (p *PixelDing) LinePath(s string) {
 	var x, y float64
 	var lx, ly float64
 	var ix, iy float64
-	var c1x,c1y,c2x,c2y float64
+	var c1x, c1y, c2x, c2y float64
 	var err error
 	sw := 0
 	cmd := ""
 
-	//var err error
-	//s := "M 12 13 L 100 100 200 200 l 90 -90 M80 80"
-	//r := "([MLml]?)\\D?([0-9.\\-]+)\\D?([0-9.\\-]+)"
-	r := "[MmLlHhVvZzCc]|[+-]?\\d+\\.\\d+|[+-]?\\d+|[+-]?\\.\\d+"
-
-	re := regexp.MustCompile(r)
+	re := regexp.MustCompile(RegSplitter)
 	ss := re.FindAllString(s, -1)
 
-	//fmt.Println("The Cow:", s)
 	it := 0
 	for _, ssSub := range ss {
 
-		//fmt.Println(":::", ssSub, len(ssSub))
+		if p.debug {
+			fmt.Println(":::", ssSub, len(ssSub))
+		}
+
 		it++
 
 		_, err = strconv.ParseFloat(ssSub, 64)
@@ -241,9 +258,9 @@ func (p *PixelDing) LinePath(s string) {
 			case "M", "m", "L", "l", "V", "v", "H", "h":
 				cmd = ssSub
 				sw = 1
-			case "C","c":
+			case "C", "c":
 				cmd = ssSub
-				sw =1
+				sw = 1
 			case "Z", "z":
 				cmd = ssSub
 				x = ix
@@ -341,7 +358,7 @@ func (p *PixelDing) LinePath(s string) {
 				p.Line(int(lx), int(ly), int(x), int(y))
 				ly = y
 			case "C", "c":
-				p.Bezier(int(lx),int(ly),int(c1x),int(c1y),int(c2x),int(c2y),int(x),int(y))
+				p.Bezier(int(lx), int(ly), int(c1x), int(c1y), int(c2x), int(c2y), int(x), int(y))
 				p.Line(int(lx), int(ly), int(x), int(y))
 				lx = x
 				ly = y
