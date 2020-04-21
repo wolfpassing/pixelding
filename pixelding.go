@@ -18,8 +18,8 @@ const DimensionError = "dimension error"
 const RegSplitter = "[MmLlHhVvZzCc]|[+-]?\\d+\\.\\d+|[+-]?\\d+|[+-]?\\.\\d+"
 
 //todo Screen Trim Nur ausgeben was wirklich da ist
-//todo Stamp Bitmuster
-//todo Font?
+//todo Stamp Bitmuster LEFT BOUND of Stamps !!
+//todo Font? Not before Stamp is not working
 
 type PixelDing struct {
 	init    bool
@@ -230,7 +230,7 @@ func abs(x int) int {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDing) LinePath(s string) {
+func (p *PixelDing) LinePath(s string, fscale... float64) {
 	var x, y float64
 	var lx, ly float64
 	var ix, iy float64
@@ -238,6 +238,10 @@ func (p *PixelDing) LinePath(s string) {
 	var err error
 	sw := 0
 	cmd := ""
+	scale := 1.0
+	for _, f := range fscale {
+		scale = f
+	}
 
 	re := regexp.MustCompile(RegSplitter)
 	ss := re.FindAllString(s, -1)
@@ -277,24 +281,40 @@ func (p *PixelDing) LinePath(s string) {
 			}
 			switch {
 
-			case (cmd == "M" || cmd == "L") && sw == 1:
+			case cmd == "M" && sw == 1:
 				x, _ = strconv.ParseFloat(ssSub, 64)
 				ix = x
 				sw = 2
-			case (cmd == "M" || cmd == "L") && sw == 2:
+			case cmd == "M" && sw == 2:
 				y, _ = strconv.ParseFloat(ssSub, 64)
 				iy = y
 				sw = 9
 
-			case (cmd == "m" || cmd == "l") && sw == 1:
+			case cmd == "m" && sw == 1:
 				x, _ = strconv.ParseFloat(ssSub, 64)
 				x = lx + x
 				ix = x
 				sw = 2
-			case (cmd == "m" || cmd == "l") && sw == 2:
+			case cmd == "m" && sw == 2:
 				y, _ = strconv.ParseFloat(ssSub, 64)
 				y = ly + y
 				iy = y
+				sw = 9
+
+			case cmd == "L" && sw == 1:
+				x, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 2
+			case cmd == "L" && sw == 2:
+				y, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 9
+
+			case cmd == "l" && sw == 1:
+				x, _ = strconv.ParseFloat(ssSub, 64)
+				x = lx + x
+				sw = 2
+			case cmd == "l" && sw == 2:
+				y, _ = strconv.ParseFloat(ssSub, 64)
+				y = ly + y
 				sw = 9
 
 			case cmd == "v" && sw == 1:
@@ -345,25 +365,25 @@ func (p *PixelDing) LinePath(s string) {
 			//fmt.Println("--------------------------------")
 			switch cmd {
 			case "L", "l":
-				p.Line(int(lx), int(ly), int(x), int(y))
+				p.Line(int(lx*scale), int(ly*scale), int(x*scale), int(y*scale))
 				lx = x
 				ly = y
 			case "M", "m":
 				lx = x
 				ly = y
 			case "H", "h":
-				p.Line(int(lx), int(ly), int(x), int(y))
+				p.Line(int(lx*scale), int(ly*scale), int(x*scale), int(y*scale))
 				lx = x
 			case "V", "v":
-				p.Line(int(lx), int(ly), int(x), int(y))
+				p.Line(int(lx*scale), int(ly*scale), int(x*scale), int(y*scale))
 				ly = y
 			case "C", "c":
-				p.Bezier(int(lx), int(ly), int(c1x), int(c1y), int(c2x), int(c2y), int(x), int(y))
-				p.Line(int(lx), int(ly), int(x), int(y))
+				p.Bezier(int(lx*scale), int(ly*scale), int(c1x*scale), int(c1y*scale), int(c2x*scale), int(c2y*scale), int(x*scale), int(y*scale))
+				//p.Line(int(lx), int(ly), int(x), int(y))
 				lx = x
 				ly = y
 			case "Z", "z":
-				p.Line(int(lx), int(ly), int(x), int(y))
+				p.Line(int(lx*scale), int(ly*scale), int(x*scale), int(y*scale))
 				lx = x
 				ly = y
 			}
