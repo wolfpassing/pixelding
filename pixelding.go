@@ -1,38 +1,228 @@
 package pixelding
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math"
+	"math/bits"
 	"regexp"
 	"strconv"
 )
 
-const MaxX = 400
-const MaxY = 200
+const MaxX = 4000
+const MaxY = 2000
+const DefStep = 15
 
 const OutOfBoundsError = "out of bounds"
 const AlreadySetError = "already set"
 const DimensionError = "dimension error"
 
-const RegSplitter = "[MmLlHhVvZzCc]|[+-]?\\d+\\.\\d+|[+-]?\\d+|[+-]?\\.\\d+"
+const RegSplitter = "[MmLlHhVvZzCcSsQqTt]|[+-]?\\d+\\.\\d+|[+-]?\\d+|[+-]?\\.\\d+"
 
 //todo Screen Trim Nur ausgeben was wirklich da ist
-//todo Stamp Bitmuster LEFT BOUND of Stamps !!
-//todo Font? Not before Stamp is not working
 
 type PixelDing struct {
-	init    bool
-	matrix  [][]bool
-	x, y    int
-	aspectX int
-	aspectY int
-	scalef  float64
-	debug   bool
-	invert  bool
-	toggle  bool
-	render  int
-	buffer  []string
+	init      bool
+	matrix    [][]bool
+	x, y      int
+	msteps    int
+	aspectX   int
+	aspectY   int
+	scalef    float64
+	debug     bool
+	invert    bool
+	toggle    bool
+	render    int
+	LastError error
+	buffer    []string
+	Fonts     map[string]PixelFont
+	Stamps    map[string]PixelStamp
+}
+
+type PixelStamp struct {
+	prepared bool     `json:"-"`
+	Data     []uint64 `json:"data"`
+}
+
+type PixelFont struct {
+	prepared bool              `json:"-"`
+	Chars    map[int]PixelChar `json:"chars"`
+}
+
+type PixelChar struct {
+	OffsetX int      `json:"offsetX"`
+	OffestY int      `json:"offsetY"`
+	SizeX   int      `json:"sizeX"`
+	SizeY   int      `json:"sizeY"`
+	GN      int      `json:"gn"`
+	GA      int      `json:"ga"`
+	Data    []uint64 `json:"data"`
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func New() PixelDing {
+	x := PixelDing{}
+	x.SetStep(0)
+	x.Fonts = make(map[string]PixelFont)
+	x.Stamps = make(map[string]PixelStamp)
+	x.AddFont("__std", x.LoadStdFont())
+	x.AddStamp("__std", x.LoadStdStamp())
+	return x
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func maxUint64(x, y uint64) uint64 {
+	if x > y {
+		return x
+	}
+	return y
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func leftBound(x []uint64) []uint64 {
+	var max uint64
+	var y []uint64
+	for _, u := range x {
+		max = maxUint64(max, u)
+	}
+
+	c := bits.LeadingZeros64(max)
+	for _, u := range x {
+		y = append(y, u<<c)
+	}
+	return y
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDing) SaveFont(name string, font PixelFont) error {
+
+	buf, err := json.Marshal(font)
+	err = ioutil.WriteFile(name, buf, 0)
+	if err != nil {
+		p.LastError = err
+		return err
+	}
+
+	return nil
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDing) LoadFont(name string) PixelFont {
+	x := PixelFont{}
+	buf, err := ioutil.ReadFile(name)
+	if err != nil {
+		p.LastError = err
+		return PixelFont{}
+	}
+	err = json.Unmarshal(buf, &x)
+	if err != nil {
+		p.LastError = err
+		return PixelFont{}
+	}
+	return x
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDing) SaveStamp(name string, stamp PixelStamp) error {
+
+	buf, err := json.Marshal(stamp)
+	err = ioutil.WriteFile(name, buf, 0)
+	if err != nil {
+		p.LastError = err
+		return err
+	}
+
+	return nil
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDing) LoadStamp(name string) PixelStamp {
+	x := PixelStamp{}
+	buf, err := ioutil.ReadFile(name)
+	if err != nil {
+		p.LastError = err
+		return PixelStamp{}
+	}
+	err = json.Unmarshal(buf, &x)
+	if err != nil {
+		p.LastError = err
+		return PixelStamp{}
+	}
+	return x
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDing) FontPrint(font string, x, y int, text string, set bool) {
+	ls := 0
+	sx := x
+	sy := y
+	v := 0
+	_, ok := p.Fonts[font]
+	if !ok {
+		return
+	}
+
+	for _, z := range text {
+		v = 0
+		if ls != 0 && p.Fonts[font].Chars[int(z)].GA == ls {
+			v = -1
+		}
+		p.fontStamp(sx+v, sy, p.Fonts[font].Chars[int(z)].Data, set)
+		sx = sx + p.Fonts[font].Chars[int(z)].SizeX + 1 + v
+		ls = p.Fonts[font].Chars[int(z)].GN
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func prepareFont(x PixelFont) PixelFont {
+	var max uint64
+	for i, char := range x.Chars {
+		ch := char
+		c := 0
+		max = 0
+		if char.SizeX != 0 {
+			continue
+		}
+		for _, datum := range char.Data {
+			max = maxUint64(max, uint64(bits.Len64(datum)))
+			c++
+		}
+		ch.SizeX = int(max)
+		ch.SizeY = c
+		ch.Data = leftBound(char.Data)
+		x.Chars[i] = ch
+	}
+	//fmt.Println("Before:",f)
+
+	return x
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDing) AddFont(name string, font PixelFont) {
+	p.Fonts[name] = font
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDing) AddStamp(name string, stamp PixelStamp) {
+	p.Stamps[name] = stamp
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDing) FontInfo(name string) {
+	for i, char := range p.Fonts[name].Chars {
+		fmt.Println("I", i, "X:", char.SizeX, "Y:", char.SizeY)
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDing) SetStep(x int) {
+	if x < 1 || x > 50 {
+		p.msteps = DefStep
+	} else {
+		p.msteps = x
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -68,13 +258,31 @@ func (p *PixelDing) Aspect(x, y int) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDing) Stamp(x, y int, stamp []uint64) {
+func (p *PixelDing) Stamp(x, y int, stamp *PixelStamp, set bool) {
+	var j int
+	if !stamp.prepared {
+		stamp.Data = leftBound(stamp.Data)
+		stamp.prepared = true
+	}
+	for i, v := range stamp.Data {
+		j = 0
+		for xx := uint64(0x8000000000000000); xx > 0; xx = xx >> 1 {
+			if v&xx != 0 {
+				p.setPixel(x+j, y+i, set)
+			}
+			j++
+		}
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDing) fontStamp(x, y int, stamp []uint64, set bool) {
 	var j int
 	for i, v := range stamp {
 		j = 0
 		for xx := uint64(0x8000000000000000); xx > 0; xx = xx >> 1 {
 			if v&xx != 0 {
-				p.setPixel(x+j, y+i, true)
+				p.setPixel(x+j, y+i, set)
 			}
 			j++
 		}
@@ -173,13 +381,16 @@ func (p *PixelDing) sscale(x int) int {
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDing) Dimensions(x, y int) error {
 	if p.init {
-		return errors.New(AlreadySetError)
+		p.LastError = errors.New(AlreadySetError)
+		return p.LastError
 	}
 	if x < 1 || y < 1 {
-		return errors.New(DimensionError)
+		p.LastError = errors.New(DimensionError)
+		return p.LastError
 	}
 	if x > MaxX || y > MaxY {
-		return errors.New(DimensionError)
+		p.LastError = errors.New(DimensionError)
+		return p.LastError
 	}
 	p.matrix = make([][]bool, y)
 
@@ -230,11 +441,12 @@ func abs(x int) int {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDing) LinePath(s string, fscale... float64) {
+func (p *PixelDing) LinePath(s string, fscale ...float64) {
 	var x, y float64
 	var lx, ly float64
 	var ix, iy float64
 	var c1x, c1y, c2x, c2y float64
+	var lcx, lcy float64
 	var err error
 	sw := 0
 	cmd := ""
@@ -265,6 +477,15 @@ func (p *PixelDing) LinePath(s string, fscale... float64) {
 			case "C", "c":
 				cmd = ssSub
 				sw = 1
+			case "S", "s":
+				cmd = ssSub
+				sw = 1
+			case "Q", "q":
+				cmd = ssSub
+				sw = 1
+			case "T", "t":
+				cmd = ssSub
+				sw = 1
 			case "Z", "z":
 				cmd = ssSub
 				x = ix
@@ -274,6 +495,7 @@ func (p *PixelDing) LinePath(s string, fscale... float64) {
 				if p.debug {
 					fmt.Println("Unknown :", ssSub)
 				}
+				p.LastError = errors.New("Unknown Command")
 			}
 		} else {
 			if sw == 0 {
@@ -358,6 +580,101 @@ func (p *PixelDing) LinePath(s string, fscale... float64) {
 				y = ly + y
 				sw = 9
 
+			case cmd == "C" && sw == 1:
+				c1x, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 2
+			case cmd == "C" && sw == 2:
+				c1y, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 3
+			case cmd == "C" && sw == 3:
+				c2x, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 4
+			case cmd == "C" && sw == 4:
+				c2y, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 5
+			case cmd == "C" && sw == 5:
+				x, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 6
+			case cmd == "C" && sw == 6:
+				y, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 9
+
+			case cmd == "S" && sw == 1:
+				c2x, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 2
+			case cmd == "S" && sw == 2:
+				c2y, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 3
+			case cmd == "S" && sw == 3:
+				x, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 4
+			case cmd == "S" && sw == 4:
+				y, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 9
+
+			case cmd == "s" && sw == 1:
+				c2x, _ = strconv.ParseFloat(ssSub, 64)
+				c2x = lx + c2x
+				sw = 2
+			case cmd == "s" && sw == 2:
+				c2y, _ = strconv.ParseFloat(ssSub, 64)
+				c2y = ly + c2y
+				sw = 3
+			case cmd == "s" && sw == 3:
+				x, _ = strconv.ParseFloat(ssSub, 64)
+				x = lx + x
+				sw = 4
+			case cmd == "s" && sw == 4:
+				y, _ = strconv.ParseFloat(ssSub, 64)
+				y = ly + y
+				sw = 9
+
+			case cmd == "Q" && sw == 1:
+				c1x, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 2
+			case cmd == "Q" && sw == 2:
+				c1y, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 3
+			case cmd == "Q" && sw == 3:
+				x, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 4
+			case cmd == "Q" && sw == 4:
+				y, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 9
+
+			case cmd == "q" && sw == 1:
+				c1x, _ = strconv.ParseFloat(ssSub, 64)
+				c1x = lx + c1x
+				sw = 2
+			case cmd == "q" && sw == 2:
+				c1y, _ = strconv.ParseFloat(ssSub, 64)
+				c1y = ly + c1y
+				sw = 3
+			case cmd == "q" && sw == 3:
+				x, _ = strconv.ParseFloat(ssSub, 64)
+				x = lx + x
+				sw = 4
+			case cmd == "q" && sw == 4:
+				y, _ = strconv.ParseFloat(ssSub, 64)
+				y = ly + y
+				sw = 9
+
+			case cmd == "T" && sw == 1:
+				x, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 2
+			case cmd == "T" && sw == 2:
+				y, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 9
+
+			case cmd == "t" && sw == 1:
+				x, _ = strconv.ParseFloat(ssSub, 64)
+				x = lx + x
+				sw = 2
+			case cmd == "t" && sw == 2:
+				y, _ = strconv.ParseFloat(ssSub, 64)
+				y = ly + y
+				sw = 9
+
 			}
 		}
 		if sw == 9 {
@@ -371,17 +688,70 @@ func (p *PixelDing) LinePath(s string, fscale... float64) {
 			case "M", "m":
 				lx = x
 				ly = y
+				lcx = x //Set the last Control Point to
+				lcy = y
 			case "H", "h":
 				p.Line(int(lx*scale), int(ly*scale), int(x*scale), int(y*scale))
 				lx = x
 			case "V", "v":
 				p.Line(int(lx*scale), int(ly*scale), int(x*scale), int(y*scale))
 				ly = y
+
 			case "C", "c":
 				p.Bezier(int(lx*scale), int(ly*scale), int(c1x*scale), int(c1y*scale), int(c2x*scale), int(c2y*scale), int(x*scale), int(y*scale))
 				//p.Line(int(lx), int(ly), int(x), int(y))
 				lx = x
 				ly = y
+				lcx = c2x
+				lcy = c2y
+
+			case "S", "s":
+				c1x = lx - -(lx - lcx)
+				c1y = ly - -(ly - lcy)
+
+				p.Bezier(int(lx*scale), int(ly*scale), int(c1x*scale), int(c1y*scale), int(c2x*scale), int(c2y*scale), int(x*scale), int(y*scale))
+				//p.Line(int(lx), int(ly), int(x), int(y))
+				lx = x
+				ly = y
+				lcx = c2x
+				lcy = c2y
+
+			case "Q", "q":
+
+				//c2x = x- -(x-c1x)
+				//c2y = y- -(y-c1y)
+				p.Bezier2(int(lx*scale), int(ly*scale), int(c1x*scale), int(c1y*scale), int(x*scale), int(y*scale))
+				//p.Line(int(lx), int(ly), int(x), int(y))
+				lx = x
+				ly = y
+				lcx = c1x
+				lcy = c1y
+
+			case "T", "t":
+				/*
+					if lcx < lx {
+						c1x = lx + (lx - lcx)
+					} else {
+						c1x = lx + (lcx - lx)
+					}
+
+					if lcy < ly {
+						c1y = ly + (ly - lcy)
+					} else {
+						c1y = ly + (lcy - ly)
+					}
+
+				*/
+				c1x = lx - -(lx - lcx)
+				c1y = ly - -(ly - lcy)
+
+				p.Bezier2(int(lx*scale), int(ly*scale), int(c1x*scale), int(c1y*scale), int(x*scale), int(y*scale))
+				//p.Line(int(lx), int(ly), int(x), int(y))
+				lx = x
+				ly = y
+				lcx = c1x
+				lcy = c1y
+
 			case "Z", "z":
 				p.Line(int(lx*scale), int(ly*scale), int(x*scale), int(y*scale))
 				lx = x
@@ -395,7 +765,53 @@ func (p *PixelDing) LinePath(s string, fscale... float64) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDing) Bezier(x0, y0, x1, y1, x2, y2, x3, y3 int) {
+func (p *PixelDing) Bezier2(x1, y1, x2, y2, x3, y3 int) {
+	var px, py [50 + 1]int
+	fx1, fy1 := float64(x1), float64(y1)
+	fx2, fy2 := float64(x2), float64(y2)
+	fx3, fy3 := float64(x3), float64(y3)
+	for i := 0; i <= p.msteps; i++ { //range px {
+		//for i := range px {
+		c := float64(i) / float64(p.msteps)
+		a := 1 - c
+		a, b, c := a*a, 2*c*a, c*c
+		px[i] = int(a*fx1 + b*fx2 + c*fx3)
+		py[i] = int(a*fy1 + b*fy2 + c*fy3)
+	}
+	x0, y0 := px[0], py[0]
+	for i := 1; i <= p.msteps; i++ {
+		x1, y1 := px[i], py[i]
+		p.Line(x0, y0, x1, y1)
+		x0, y0 = x1, y1
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDing) Bezier(x1, y1, x2, y2, x3, y3, x4, y4 int) {
+	var px, py [50 + 1]int
+	fx1, fy1 := float64(x1), float64(y1)
+	fx2, fy2 := float64(x2), float64(y2)
+	fx3, fy3 := float64(x3), float64(y3)
+	fx4, fy4 := float64(x4), float64(y4)
+	for i := 0; i <= p.msteps; i++ { //range px {
+		//for i := range px {
+		d := float64(i) / float64(p.msteps)
+		a := 1 - d
+		b, c := a*a, d*d
+		a, b, c, d = a*b, 3*b*d, 3*a*c, c*d
+		px[i] = int(a*fx1 + b*fx2 + c*fx3 + d*fx4)
+		py[i] = int(a*fy1 + b*fy2 + c*fy3 + d*fy4)
+	}
+	x0, y0 := px[0], py[0]
+	for i := 1; i <= p.msteps; i++ {
+		x1, y1 := px[i], py[i]
+		p.Line(x0, y0, x1, y1)
+		x0, y0 = x1, y1
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDing) BezierAlt(x0, y0, x1, y1, x2, y2, x3, y3 int) {
 
 	xu := 0.0
 	yu := 0.0
@@ -416,14 +832,11 @@ func (p *PixelDing) Bezier(x0, y0, x1, y1, x2, y2, x3, y3 int) {
 
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDing) Rectangle(x0, y0, x1, y1 int, b bool, f bool) {
-
 	x0, y0 = p.scale(x0, y0)
 	x1, y1 = p.scale(x1, y1)
-
 	for i := x0; i <= x1; i++ {
 		p.setPixel(i, y0, b)
 	}
-
 	for i := y0; i < y1; i++ {
 		if f {
 			for j := x0; j <= x1; j++ {
@@ -434,7 +847,6 @@ func (p *PixelDing) Rectangle(x0, y0, x1, y1 int, b bool, f bool) {
 			p.setPixel(x1, i, b)
 		}
 	}
-
 	for i := x0; i <= x1; i++ {
 		p.setPixel(i, y1, b)
 	}
@@ -445,7 +857,6 @@ func (p *PixelDing) floodFill(x, y int, prevC, newC bool) {
 	if x < 0 || x >= p.x || y < 0 || y >= p.y {
 		return
 	}
-
 	if prevC != p.getPixel(x, y) {
 		return
 	}
