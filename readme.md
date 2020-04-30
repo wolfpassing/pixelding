@@ -1,4 +1,7 @@
 # PixelDING
-![pixelding](https://github.com/wolfpassing/pixelding/screenshots/PixelDing.png)
+![pixelding](screenshots/PixelDing.png?raw=true "The PixelDING")
+![pixelding](screenshots/PixelDing.png "The PixelDONG")
+![pixelding](/screenshots/PixelDing.png "The PixelDUNG")
+
 
 
