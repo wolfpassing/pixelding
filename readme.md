@@ -1,5 +1,5 @@
 # PixelDING
-![pixelding](screenshots/PixelDing.png?raw=true "The PixelDING")
+![pixelding](screenshots/console.png "The PixelDING")
 
 ## What is PixelDING ?
 It's not easy to describe the purpose of PixelDING. It started with straight line, in an similar path string like SVG is using. Over the time more and more things got implemented and it is still not finished.an
@@ -27,8 +27,10 @@ SVG compatible and scalable paths
 Fonts for Text
 
 ### Stamps
-![stamps](screenshots/stamps.png "The PixelDING")
+![stamps](screenshots/stamp.png "The PixelDING")
 Stamps (Bitmaps)
+
+
 
 
 
