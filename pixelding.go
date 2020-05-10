@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/bits"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -138,10 +139,10 @@ func (p *PixelDING) Y() int {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) SaveFont(name string, font *PixelFont) error {
+func (p *PixelDING) SaveFont(name string, font *PixelFont, perm os.FileMode) error {
 
 	buf, err := json.Marshal(font)
-	err = ioutil.WriteFile(name, buf, 0)
+	err = ioutil.WriteFile(name, buf, perm)
 	if err != nil {
 		p.LastError = err
 		return err
@@ -166,9 +167,9 @@ func (p *PixelDING) LoadFont(name string) *PixelFont {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) SaveStamp(name string, stamp *PixelStamp) error {
+func (p *PixelDING) SaveStamp(name string, stamp *PixelStamp, perm os.FileMode) error {
 	buf, err := json.Marshal(stamp)
-	err = ioutil.WriteFile(name, buf, 0)
+	err = ioutil.WriteFile(name, buf, perm)
 	if err != nil {
 		p.LastError = err
 		return err
@@ -571,6 +572,11 @@ func abs(x int) int {
 
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Text(x, y int, text string) {
+	x,y = p.scale(x,y)
+
+	x=x/2
+	y=y/2
+
 	var n string
 	if len(p.buffer) < y+1 {
 		return //Out of bounds

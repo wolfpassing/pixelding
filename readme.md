@@ -10,7 +10,7 @@ Over the time more and more things got implemented and it is still not finished.
 Lets have a look of some samples.
 ----
 ### Simple things
-![circle](screenshots/circle.png "The PixelDING")
+![circle](screenshots/circle.png width=50% "The PixelDING")
 ![rectangle](screenshots/rectangle.png "The PixelDING")
 ![line](screenshots/line.png "The PixelDING")
 ![ellipse](screenshots/ellipse.png "The PixelDING")
@@ -216,9 +216,12 @@ pd.Stamp(pd.GetStamp("flower"),20,50,true,true) //Stamp a stored stamp with name
 
 ----
 #### func (p *PixelDING) LoadFont(name string) *PixelFont
-Load a front by the given name (including path). This is returning a PixelFont object which can be added via AddFont function.
+Load a front by the given name (including path). This is returning a PixelFont object which can be added via AddFont function. LoadFont as a other Load functions does return **nil** on file errors
 ````GO
 myFont := pd.LoadFont("/home/user/fonts/smallfont.fnt")
+if myFont == nil {
+    return errors.New("File not found.")
+}
 ````
 
 ----
@@ -230,9 +233,12 @@ pd.SaveFont("C:\\FONTS\\SMALLFONT.FNT")
 
 ----
 #### func (p *PixelDING) LoadStamp(name string) *PixelStamp
-Load a stamp by the given name (including path). This is returning a PixelStamp object which can be added via AddStamp function.
+Load a stamp by the given name (including path). This is returning a PixelStamp object which can be added via AddStamp function. LoadStamp as a other Load functions does return **nil** on file errors
 ````GO
-myFont := pd.LoadStamp("/home/user/stamps/duck.stp")
+myStamp := pd.LoadStamp("/home/user/stamps/duck.stp")
+if myStamp == nil {
+    return errors.New("File not found.")
+}
 ````
 
 ----
