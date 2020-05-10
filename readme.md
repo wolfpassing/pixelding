@@ -5,6 +5,8 @@
 It's not easy to describe the purpose of PixelDING. It started with straight lines, in an SVG like path string as output to the **console**.
 Over the time more and more things got implemented and it is still not finished.
 
+![pixelding](screenshots/charts.png "The PixelDING")
+
 Lets have a look of some samples.
 ----
 ### Simple things
@@ -32,7 +34,7 @@ Fonts for Text
 ![stamps](screenshots/stamp.png "The PixelDING")
 Stamps (Bitmaps)
 
-# Lets have a general look into
+# Lets have a more detailed look into
 
 ## Small Example
 ````GO
@@ -50,7 +52,11 @@ That should be the result. A perfect circle yinyang showing up in yor console.
 >Note: Depending on the console font size the result could be squeezed horizontal or vertical, see the Aspect command for compensating this.
 
 ----
-## Preparations
+## Preparations and Information
+
+### Coordinates
+Whenever there is a X and Y coordinate used, it is zero based. On an paint area of 200 by 200 dimensions the X and Y coordinate range is from 0 to 199.
+
 
 #### func New(dimensions... int) PixelDING
 Initialize and return a PixelDING object. If you want you can specify the dimensions X and Y for the paint area.
@@ -98,9 +104,9 @@ pd.SetStep(7)
 #### func (p *PixelDING) Render() []string
 #### func (p *PixelDING) RenderSmallest() []string
 #### func (p *PixelDING) RenderXY(x1, y1, x2, y2 int) []string
-Render the internal paint area. The result is returned and internal stored in the PixelDING object saved for the Display command.
+Render the internal paint area. The result is returned as an string slice and internal stored in the PixelDING object saved for the Display command.
 
-For the RenderSmallest all leading and trailing empty pixels are not rendered. If there is just one pixel painted at 75,25 on a 100 by 100 paint area there is just one pixel renderd.
+For the RenderSmallest all leading and trailing empty pixels are not rendered. If there is just one pixel painted at 75,25 on a 100 by 100 paint area there is just one pixel renderd and the string slice result consists of on char.
 
 ````GO
 pd.Render()                 //Simple Render, full dimension as set in the PixelDING object
@@ -118,7 +124,6 @@ pd.Display()        //prints out the rendered buffer from the PixelDING object.
 
 ## Drawing
 
-----
 #### func (p *PixelDING) Pixel(x, y int, b bool)
 Put a pixel on the paint area at x,y if b=true. If b=false the pixel is cleared
 ````GO

@@ -8,6 +8,7 @@ import (
 	"math/bits"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 const MaxX = 4000
@@ -61,9 +62,9 @@ type PixelChar struct {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func New(dimensions... int) PixelDING {
+func New(dimensions ...int) PixelDING {
 	x := PixelDING{}
-	if len(dimensions)> 1 {
+	if len(dimensions) > 1 {
 		x.sizeX = dimensions[0]
 		x.sizeY = dimensions[1]
 		x.init = true
@@ -453,6 +454,13 @@ func (p *PixelDING) Render() []string {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) BufferAnalyse() {
+	for i, s := range p.buffer {
+		fmt.Println(i,len(s))
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Clear() {
 	p.matrix = make([][]bool, p.sizeY)
 	for i := range p.matrix {
@@ -487,12 +495,12 @@ func (p *PixelDING) sscale(x int) int {
 
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Dimensions(x, y int) error {
-/*
-	if p.init {
-		p.LastError = errors.New(AlreadySetError)
-		return p.LastError
-	}
-*/
+	/*
+		if p.init {
+			p.LastError = errors.New(AlreadySetError)
+			return p.LastError
+		}
+	*/
 	if x < 1 || y < 1 {
 		p.LastError = errors.New(DimensionError)
 		return p.LastError
@@ -536,20 +544,20 @@ func (p *PixelDING) setPixel(x, y int, b bool) {
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) GetPixel(x, y int) bool {
 	x, y = p.scale(x, y)
-/*	if !p.check(x, y) {
-		return false
-	}
-*/
+	/*	if !p.check(x, y) {
+			return false
+		}
+	*/
 	return p.getPixel(x, y)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Pixel(x, y int, b bool) {
 	x, y = p.scale(x, y)
-/*	if !p.check(x, y) {
-		return
-	}
-*/
+	/*	if !p.check(x, y) {
+			return
+		}
+	*/
 	p.setPixel(x, y, b)
 }
 
@@ -562,7 +570,47 @@ func abs(x int) int {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) SVGPath(xo,yo float64, s string, bs bool, fscale ...float64) {
+func (p *PixelDING) Text(x, y int, text string) {
+	var n string
+	if len(p.buffer) < y+1 {
+		return //Out of bounds
+	}
+	l := len(text)
+
+	s := strings.Split(p.buffer[y],"")
+	sl := len(s)
+//	fmt.Println("sl", sl, "l", l)
+	cs := 0
+	for i := 0; i < x; i++ {
+		n = n+s[i]
+		cs++
+	}
+
+	for _, t := range text {
+		if cs > sl {break}
+		n=n+string(t)
+		cs++
+	}
+
+	for i:=x+l; i<sl; i++ {
+		if cs > sl {break}
+		n=n+s[i]
+		cs++
+	}
+
+	//
+/*
+	for i, b := range s {
+		fmt.Print("[",i,"]",b,string(b),"-")
+	}
+	fmt.Println(len(s))
+*/
+	p.buffer[y] = n
+
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) SVGPath(xo, yo float64, s string, bs bool, fscale ...float64) {
 	var x, y float64
 	var lx, ly float64
 	var ix, iy float64
@@ -889,7 +937,7 @@ func (p *PixelDING) QBezier(x1, y1, x2, y2, x3, y3 int, bs bool) {
 	x0, y0 := px[0], py[0]
 	for i := 1; i <= p.msteps; i++ {
 		x1, y1 := px[i], py[i]
-		p.Line(x0, y0, x1, y1,bs)
+		p.Line(x0, y0, x1, y1, bs)
 		x0, y0 = x1, y1
 	}
 }
@@ -917,7 +965,7 @@ func (p *PixelDING) CBezier(x1, y1, x2, y2, x3, y3, x4, y4 int, bs bool) {
 	x0, y0 := px[0], py[0]
 	for i := 1; i <= p.msteps; i++ {
 		x1, y1 := px[i], py[i]
-		p.Line(x0, y0, x1, y1,bs)
+		p.Line(x0, y0, x1, y1, bs)
 		x0, y0 = x1, y1
 	}
 }
