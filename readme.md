@@ -10,7 +10,7 @@ Over the time more and more things got implemented and it is still not finished.
 Lets have a look of some samples.
 ----
 ### Simple things
-![circle](screenshots/circle.png) <!-- .element height="50%" width="50%" -->
+![circle](screenshots/circle.png "Circles"  { height=50% width=50% })
 ![rectangle](screenshots/rectangle.png "The PixelDING")
 ![line](screenshots/line.png "The PixelDING")
 ![ellipse](screenshots/ellipse.png "The PixelDING")
