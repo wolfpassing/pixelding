@@ -2,7 +2,7 @@ package pixelding
 
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) LoadStdStamp() PixelStamp {
+func (p *PixelDING) LoadStdStamp() *PixelStamp {
 	StdStamp := PixelStamp{
 		false,0,
 		[]uint64{
@@ -20,11 +20,11 @@ func (p *PixelDING) LoadStdStamp() PixelStamp {
 			0B01000000000000000000000000001111111111111111111111111110,
 			0B00111111111111111111111111100111111111111111111111111100},
 	}
-	return StdStamp
+	return &StdStamp
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) LoadStdFont() PixelFont {
+func (p *PixelDING) LoadStdFont() *PixelFont {
 	StdFont := PixelFont{
 		false,
 		map[int]PixelChar{
@@ -80,5 +80,6 @@ func (p *PixelDING) LoadStdFont() PixelFont {
 			57: {0, 0, 0, 0, 0,0, 0, []uint64{0B01110, 0B10001, 0B01111, 0B00001, 0B01110}},
 		},
 	}
-	return prepareFont(StdFont)
+	f := prepareFont(StdFont)
+	return &f
 }

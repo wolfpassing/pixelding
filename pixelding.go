@@ -34,8 +34,8 @@ type PixelDING struct {
 	render       int
 	LastError    error
 	buffer       []string
-	Fonts        map[string]PixelFont
-	Stamps       map[string]PixelStamp
+	fonts        map[string]*PixelFont
+	stamps       map[string]*PixelStamp
 }
 
 type PixelStamp struct {
@@ -69,8 +69,8 @@ func New(dimensions... int) PixelDING {
 		x.init = true
 	}
 	x.SetStep(0)
-	x.Fonts = make(map[string]PixelFont)
-	x.Stamps = make(map[string]PixelStamp)
+	x.fonts = make(map[string]*PixelFont)
+	x.stamps = make(map[string]*PixelStamp)
 	x.AddFont("__std", x.LoadStdFont())
 	x.AddStamp("__std", x.LoadStdStamp())
 	return x
@@ -137,7 +137,7 @@ func (p *PixelDING) Y() int {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) SaveFont(name string, font PixelFont) error {
+func (p *PixelDING) SaveFont(name string, font *PixelFont) error {
 
 	buf, err := json.Marshal(font)
 	err = ioutil.WriteFile(name, buf, 0)
@@ -149,23 +149,23 @@ func (p *PixelDING) SaveFont(name string, font PixelFont) error {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) LoadFont(name string) PixelFont {
+func (p *PixelDING) LoadFont(name string) *PixelFont {
 	x := PixelFont{}
 	buf, err := ioutil.ReadFile(name)
 	if err != nil {
 		p.LastError = err
-		return PixelFont{}
+		return nil
 	}
 	err = json.Unmarshal(buf, &x)
 	if err != nil {
 		p.LastError = err
-		return PixelFont{}
+		return nil
 	}
-	return x
+	return &x
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) SaveStamp(name string, stamp PixelStamp) error {
+func (p *PixelDING) SaveStamp(name string, stamp *PixelStamp) error {
 	buf, err := json.Marshal(stamp)
 	err = ioutil.WriteFile(name, buf, 0)
 	if err != nil {
@@ -176,23 +176,23 @@ func (p *PixelDING) SaveStamp(name string, stamp PixelStamp) error {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) LoadStamp(name string) PixelStamp {
+func (p *PixelDING) LoadStamp(name string) *PixelStamp {
 	x := PixelStamp{}
 	buf, err := ioutil.ReadFile(name)
 	if err != nil {
 		p.LastError = err
-		return PixelStamp{}
+		return nil
 	}
 	err = json.Unmarshal(buf, &x)
 	if err != nil {
 		p.LastError = err
-		return PixelStamp{}
+		return nil
 	}
-	return x
+	return &x
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) FontPrint(font PixelFont, x, y int, text string, set bool) {
+func (p *PixelDING) FontPrint(font *PixelFont, x, y int, text string, set bool) {
 	ls := 0
 	sx := x
 	sy := y
@@ -235,18 +235,28 @@ func prepareFont(x PixelFont) PixelFont {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) AddFont(name string, font PixelFont) {
-	p.Fonts[name] = font
+func (p *PixelDING) AddFont(name string, font *PixelFont) {
+	p.fonts[name] = font
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) AddStamp(name string, stamp PixelStamp) {
-	p.Stamps[name] = stamp
+func (p *PixelDING) GetFont(name string) *PixelFont {
+	return p.fonts[name]
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) AddStamp(name string, stamp *PixelStamp) {
+	p.stamps[name] = stamp
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) GetStamp(name string) *PixelStamp {
+	return p.stamps[name]
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) FontInfo(name string) {
-	for i, char := range p.Fonts[name].Chars {
+	for i, char := range p.fonts[name].Chars {
 		fmt.Println("I", i, "X:", char.SizeX, "Y:", char.SizeY)
 	}
 }
@@ -524,11 +534,22 @@ func (p *PixelDING) setPixel(x, y int, b bool) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) GetPixel(x, y int) bool {
+	x, y = p.scale(x, y)
+/*	if !p.check(x, y) {
+		return false
+	}
+*/
+	return p.getPixel(x, y)
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Pixel(x, y int, b bool) {
 	x, y = p.scale(x, y)
-	if !p.check(x, y) {
+/*	if !p.check(x, y) {
 		return
 	}
+*/
 	p.setPixel(x, y, b)
 }
 
