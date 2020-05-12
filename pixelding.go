@@ -457,7 +457,7 @@ func (p *PixelDING) Render() []string {
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) BufferAnalyse() {
 	for i, s := range p.buffer {
-		fmt.Println(i,len(s))
+		fmt.Println(i, len(s))
 	}
 }
 
@@ -562,6 +562,10 @@ func (p *PixelDING) Pixel(x, y int, b bool) {
 	p.setPixel(x, y, b)
 }
 
+func swap(a, b int) (int, int) {
+	return b, a
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 func abs(x int) int {
 	if x < 0 {
@@ -571,46 +575,190 @@ func abs(x int) int {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) Text(x, y int, text string) {
-	x,y = p.scale(x,y)
+func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, ff int, b ...bool) {
+	noLineH := false
+	noLineV := false
+	sx := strings.Split(l, "")
+	h1 := ""
+	h2 := ""
 
-	x=x/2
-	y=y/2
+	if x1 > x2 {
+		x1, x2 = swap(x1, x2)
+	}
+	if y1 > y2 {
+		y1, y2 = swap(y1, y2)
+	}
 
+	if x2-x1 < 1 || y2-y1 < 1 {
+		return
+	}
+	if x2-x1 < 2 {
+		noLineH = true
+	}
+	if y2-y1 < 2 {
+		noLineV = true
+	}
+
+	if noLineV == false {
+		for i := y1 + 1; i < y2; i++ {
+			if ff&(1<<5) != 0 {
+				if len(b) > 0 {
+					p.Text(x1, i, sx[3], b[0])
+				} else {
+					p.Text(x1, i, sx[3])
+				}
+			}
+			if ff&(1<<3) != 0 {
+				if len(b) > 0 {
+					p.Text(x2, i, sx[5], b[0])
+				} else {
+					p.Text(x2, i, sx[5])
+				}
+			}
+		}
+	}
+
+	if noLineH == false {
+		hs:= x2-x1-1
+		if len(b) > 0 {
+			if b[0] == true {
+				hs=(x2-x1-1)/2
+			}
+		}
+		if ff&(1<<7) != 0 {
+			h1 = strings.Repeat(sx[1], hs)
+			if len(b) > 0 {
+				p.Text(x1+1, y1, h1, b[0])
+			} else {
+				p.Text(x1+1, y1, h1)
+			}
+		}
+		if ff&(1<<1) != 0 {
+			h2 = strings.Repeat(sx[7], hs)
+			if len(b) > 0 {
+				p.Text(x1+1, y2, h2, b[0])
+			} else {
+				p.Text(x1+1, y2, h2)
+			}
+		}
+	}
+
+	if len(b) > 0 {
+		if ff&(1<<8) != 0 {
+			p.Text(x1, y1, sx[0], b[0])
+		}
+		if ff&(1<<6) != 0 {
+			p.Text(x2, y1, sx[2], b[0])
+		}
+		if ff&(1<<2) != 0 {
+			p.Text(x1, y2, sx[6], b[0])
+		}
+		if ff&(1<<0) != 0 {
+			p.Text(x2, y2, sx[8], b[0])
+		}
+	} else {
+		if ff&(1<<8) != 0 {
+			p.Text(x1, y1, sx[0])
+		}
+		if ff&(1<<6) != 0 {
+			p.Text(x2, y1, sx[2])
+		}
+		if ff&(1<<2) != 0 {
+			p.Text(x1, y2, sx[6])
+		}
+		if ff&(1<<0) != 0 {
+			p.Text(x2, y2, sx[8])
+		}
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) TextLineH(x1, y1, x2, y2 int, l string, b ...bool) {
+	sx := strings.Split(l, "")
+	hs := ""
+	//lc := strings.Split(l,"")
+	if x1 > x2 {
+		x1, x2 = swap(x1, x2)
+		y1, y2 = swap(y1, y2)
+	}
+	hs = strings.Repeat(sx[1], x2-x1)
+	if len(b) > 0 {
+		p.Text(x1, y1, hs, b[0])
+	} else {
+		p.Text(x1, y1, hs)
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) TextLineV(x1, y1, x2, y2 int, l string, b ...bool) {
+	sx := strings.Split(l, "")
+	//lc := strings.Split(l,"")
+	if y1 > y2 {
+		x1, x2 = swap(x1, x2)
+		y1, y2 = swap(y1, y2)
+	}
+	for i := y1; i < y2; i++ {
+		if len(b) > 0 {
+			p.Text(x1, i, sx[3], b[0])
+		} else {
+			p.Text(x1, i, sx[3])
+		}
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) Text(x, y int, text string, b ...bool) {
+	if len(b) > 0 {
+		if b[0] == true {
+			x, y = p.scale(x, y)
+			x = x / 2
+			y = y / 2
+		}
+	}
 	var n string
 	if len(p.buffer) < y+1 {
 		return //Out of bounds
 	}
-	l := len(text)
+	sx := strings.Split(text, "")
+	l := len(sx)
 
-	s := strings.Split(p.buffer[y],"")
+	s := strings.Split(p.buffer[y], "")
 	sl := len(s)
-//	fmt.Println("sl", sl, "l", l)
-	cs := 0
+
+	if x > sl {
+		return //Out of bounds
+	}
+
+	//	fmt.Println("sl", sl, "l", l)
+	cs := 1
 	for i := 0; i < x; i++ {
-		n = n+s[i]
+		n = n + s[i]
 		cs++
 	}
-
-	for _, t := range text {
-		if cs > sl {break}
-		n=n+string(t)
+	//fmt.Println(cs)
+	for _, t := range sx {
+		if cs > sl {
+			break
+		}
+		n = n + t
 		cs++
 	}
-
-	for i:=x+l; i<sl; i++ {
-		if cs > sl {break}
-		n=n+s[i]
+	//fmt.Println(cs)
+	for i := x + l; i < sl; i++ {
+		if cs > sl {
+			break
+		}
+		n = n + s[i]
 		cs++
 	}
-
+	//fmt.Println(cs)
 	//
-/*
-	for i, b := range s {
-		fmt.Print("[",i,"]",b,string(b),"-")
-	}
-	fmt.Println(len(s))
-*/
+	/*
+		for i, b := range s {
+			fmt.Print("[",i,"]",b,string(b),"-")
+		}
+		fmt.Println(len(s))
+	*/
 	p.buffer[y] = n
 
 }
