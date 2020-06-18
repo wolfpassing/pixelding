@@ -764,6 +764,18 @@ func (p *PixelDING) Text(x, y int, text string, b ...bool) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) HBar(size int) string {
+	sx := strings.Split(HBar, "")
+	e := size / 8
+	r := size % 8
+	s := strings.Repeat(sx[0],e)
+	if r > 0 {
+		s = s + sx[r]
+	}
+return s
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) SVGPath(xo, yo float64, s string, bs bool, fscale ...float64) {
 	var x, y float64
 	var lx, ly float64
