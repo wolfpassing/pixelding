@@ -10,6 +10,9 @@ const DoubleFrame = "\u2554\u2550\u2557\u2551*\u2551\u255A\u2550\u255D"
 const RoundFrame = "\u256D\u2500\u256E\u2502*\u2502\u2570\u2500\u256F"
 const BlockFrame = "\u259B\u2580\u259C\u258C*\u2590\u2599\u2584\u259F"
 const TextFrame = "+-+|*|+-+"
+
+const HBar = "\u2588\u258F\u258E\u258D\u258C\u258B\u258A\u2589"
+
 /*
 const SingleFrame = [9]string{
 	string(0x250C), string(0x2500), string(0x2510),

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"math/bits"
 	"os"
 	"regexp"
@@ -619,10 +620,10 @@ func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, ff int, b ...bool) {
 	}
 
 	if noLineH == false {
-		hs:= x2-x1-1
+		hs := x2 - x1 - 1
 		if len(b) > 0 {
 			if b[0] == true {
-				hs=(x2-x1-1)/2
+				hs = (x2 - x1 - 1) / 2
 			}
 		}
 		if ff&(1<<7) != 0 {
@@ -761,6 +762,18 @@ func (p *PixelDING) Text(x, y int, text string, b ...bool) {
 	*/
 	p.buffer[y] = n
 
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) HBar(size int) string {
+	sx := strings.Split(HBar, "")
+	e := size / 8
+	r := size % 8
+	s := strings.Repeat(sx[0], e)
+	if r > 0 {
+		s = s + sx[r]
+	}
+	return s
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1194,6 +1207,107 @@ func (p *PixelDING) Fill(x, y int, newC bool) {
 	}
 	p.floodFill(x, y, prevC, newC)
 }
+
+func toRadian(angle int) float64 {
+	return float64(angle) * (math.Pi / 180.0)
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) DotArc(x0, y0, r int, a1, a2, step int, bs bool) { //wieso
+
+	x0, y0 = p.scale(x0, y0)
+	r = p.sscale(r)
+
+	if a1 == a2 {
+		return
+	}
+
+	if a1 < 0 || a2 < 0 || a1 > 360 || a2 > 360 {
+		return
+	}
+	if a1 > a2 {
+		a2+=360
+	}
+
+	for {
+		if a1 >= a2 {
+			break
+		}
+
+		xo := int(math.Round(float64(r) * math.Sin(toRadian(a1%360))))
+		yo := int(math.Round(float64(r) * math.Cos(toRadian(a1%360))))
+
+		p.setPixel(x0+xo, y0-yo, bs)
+
+		a1 += step
+
+	}
+
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) LineArc(x0, y0, r int, a1, a2, step int, bs bool) { //wieso
+
+	x0, y0 = p.scale(x0, y0)
+	r = p.sscale(r)
+
+	fromx := 0
+	fromy := 0
+	firstfrom := true
+
+	if a1 == a2 {
+		return
+	}
+
+	if a1 < 0 || a2 < 0 || a1 > 360 || a2 > 360 {
+		return
+	}
+	if a1 > a2 {
+		a2+=360
+	}
+
+	for {
+		if a1 >= a2 {
+			break
+		}
+
+		xo := int(math.Round(float64(r) * math.Sin(toRadian(a1%360))))
+		yo := int(math.Round(float64(r) * math.Cos(toRadian(a1%360))))
+
+		if !firstfrom {
+			p.Line(x0+fromx, y0-fromy, x0+xo, y0-yo, bs)
+
+		}
+		firstfrom = false
+		fromx = xo
+		fromy = yo
+
+		a1 += step
+
+	}
+
+	xo := int(math.Round(float64(r) * math.Sin(toRadian(a2%360))))
+	yo := int(math.Round(float64(r) * math.Cos(toRadian(a2%360))))
+	p.Line(x0+fromx, y0-fromy, x0+xo, y0-yo, bs)
+
+}
+
+func (p *PixelDING) LineRadius(x0,y0,r1,r2,a1 int, bs bool) {
+	x0, y0 = p.scale(x0, y0)
+	r1 = p.sscale(r1)
+	r2 = p.sscale(r2)
+
+
+	x1 := int(math.Round(float64(r1) * math.Sin(toRadian(a1))))
+	y1 := int(math.Round(float64(r1) * math.Cos(toRadian(a1))))
+	x2 := int(math.Round(float64(r2) * math.Sin(toRadian(a1))))
+	y2 := int(math.Round(float64(r2) * math.Cos(toRadian(a1))))
+
+	p.Line(x0+x1, y0-y1, x0+x2, y0-y2, bs)
+
+
+}
+
 
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) EllipseRect(x0, y0, x1, y1 int, bs bool) {
