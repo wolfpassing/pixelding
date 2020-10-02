@@ -22,6 +22,10 @@ Circles, Rectangles, Lines and Ellipses
 ![bezier](screenshots/bezier2.png "The PixelDING")
 Simple and complex Bezier curves
 
+### Arc und Lines
+![arc](screenshots/arclines1.png "The PixelDING")
+![arc](screenshots/arclines2.png "The PixelDING")
+
 ### SVG Path things
 ![svg1](screenshots/svg1.png "The PixelDING")
 ![svg2](screenshots/svg2.png "The PixelDING")
@@ -187,6 +191,33 @@ Draw a circle at x0,y0 with the radius r. Set the pixels on b=true otherwise cle
 ````GO
 pd.Circle(25,25,10,true)
 ````
+
+----
+#### DotArc(x0, y0, r int, a1, a2, step int, bs bool)
+Draw an dotted arc at x0,y0 with the radius r. a1 and a2 specify the degrees from and to. Set the pixels on b=true otherwise clear them.
+The arc is drawn allways clockwise. So the example should show the upper half circle. (9 to 3 on the clock) 
+````GO
+pd.DotArc(100,100,25,270,90,true)
+````
+
+----
+#### LineArc(x0, y0, r int, a1, a2, step int, bs bool)
+Draw an arc at x0,y0 with the radius r. a1 and a2 specify the degrees from and to. Set the pixels on b=true otherwise clear them.
+The arc is drawn allways clockwise. So the example should show the lower half circle. (3 to 9 on the clock)
+````GO
+pd.LineArc(100,100,25,90,270,true)
+````
+
+----
+#### LineRadius(x0,y0,r1,r2,a1 int, bs bool)
+Draw a line from an circle center point x0,y0 to the given direction in degrees a1.
+The line is starting at the first radius r1 and ends at the second radius r2. Set the pixels on b=true otherwise clear them.
+````GO
+pd.LineRadius(50,50,20,50,45,true)
+````
+
+LineRadius(x0,y0,r1,r2,a1 int, bs bool)
+
 
 ----
 #### SVGPath(xo,yo float64, s string, b bool, fscale ...float64)
