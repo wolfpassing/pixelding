@@ -76,6 +76,7 @@ func New(dimensions ...int) PixelDING {
 	x.stamps = make(map[string]*PixelStamp)
 	x.AddFont("__std", x.LoadStdFont())
 	x.AddStamp("__std", x.LoadStdStamp())
+	x.LastError = x.Dimensions(x.sizeX,x.sizeY)
 	return x
 }
 
