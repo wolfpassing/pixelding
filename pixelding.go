@@ -428,6 +428,10 @@ func (p *PixelDING) RenderXY(x1, y1, x2, y2 int) []string {
 	if p.invert {
 		cmp = !cmp
 	}
+	//xtoggle :=0
+	//ytoggle := 0
+
+
 	for y := y1; y < y2; y = y + 2 - p.aspectY {
 		lo = ""
 		for x := x1; x < x2; x = x + 2 - p.aspectX { // = sizeX + 2 {
@@ -435,13 +439,13 @@ func (p *PixelDING) RenderXY(x1, y1, x2, y2 int) []string {
 			if p.getPixel(x, y) == cmp {
 				bit += 8
 			}
-			if p.getPixel(x+1, y) == cmp {
+			if p.getPixel(x+1-p.aspectX, y) == cmp {
 				bit += 4
 			}
-			if p.getPixel(x, y+1) == cmp {
+			if p.getPixel(x, y+1-p.aspectY) == cmp {
 				bit += 2
 			}
-			if p.getPixel(x+1, y+1) == cmp {
+			if p.getPixel(x+1-p.aspectX, y+1-p.aspectY) == cmp {
 				bit += 1
 			}
 			lo = lo + cox[bit]
@@ -555,13 +559,13 @@ func (p *PixelDING) GetPixel(x, y int) bool {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) Pixel(x, y int, b bool) {
+func (p *PixelDING) Pixel(x, y int, set bool) {
 	x, y = p.scale(x, y)
 	/*	if !p.check(x, y) {
 			return
 		}
 	*/
-	p.setPixel(x, y, b)
+	p.setPixel(x, y, set)
 }
 
 func swap(a, b int) (int, int) {
@@ -577,7 +581,7 @@ func abs(x int) int {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, ff int, b ...bool) {
+func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, bitmask int, set ...bool) {
 	noLineH := false
 	noLineV := false
 	sx := strings.Split(l, "")
@@ -603,16 +607,16 @@ func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, ff int, b ...bool) {
 
 	if noLineV == false {
 		for i := y1 + 1; i < y2; i++ {
-			if ff&(1<<5) != 0 {
-				if len(b) > 0 {
-					p.Text(x1, i, sx[3], b[0])
+			if bitmask&(1<<5) != 0 {
+				if len(set) > 0 {
+					p.Text(x1, i, sx[3], set[0])
 				} else {
 					p.Text(x1, i, sx[3])
 				}
 			}
-			if ff&(1<<3) != 0 {
-				if len(b) > 0 {
-					p.Text(x2, i, sx[5], b[0])
+			if bitmask&(1<<3) != 0 {
+				if len(set) > 0 {
+					p.Text(x2, i, sx[5], set[0])
 				} else {
 					p.Text(x2, i, sx[5])
 				}
@@ -622,60 +626,60 @@ func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, ff int, b ...bool) {
 
 	if noLineH == false {
 		hs := x2 - x1 - 1
-		if len(b) > 0 {
-			if b[0] == true {
+		if len(set) > 0 {
+			if set[0] == true {
 				hs = (x2 - x1 - 1) / 2
 			}
 		}
-		if ff&(1<<7) != 0 {
+		if bitmask&(1<<7) != 0 {
 			h1 = strings.Repeat(sx[1], hs)
-			if len(b) > 0 {
-				p.Text(x1+1, y1, h1, b[0])
+			if len(set) > 0 {
+				p.Text(x1+1, y1, h1, set[0])
 			} else {
 				p.Text(x1+1, y1, h1)
 			}
 		}
-		if ff&(1<<1) != 0 {
+		if bitmask&(1<<1) != 0 {
 			h2 = strings.Repeat(sx[7], hs)
-			if len(b) > 0 {
-				p.Text(x1+1, y2, h2, b[0])
+			if len(set) > 0 {
+				p.Text(x1+1, y2, h2, set[0])
 			} else {
 				p.Text(x1+1, y2, h2)
 			}
 		}
 	}
 
-	if len(b) > 0 {
-		if ff&(1<<8) != 0 {
-			p.Text(x1, y1, sx[0], b[0])
+	if len(set) > 0 {
+		if bitmask&(1<<8) != 0 {
+			p.Text(x1, y1, sx[0], set[0])
 		}
-		if ff&(1<<6) != 0 {
-			p.Text(x2, y1, sx[2], b[0])
+		if bitmask&(1<<6) != 0 {
+			p.Text(x2, y1, sx[2], set[0])
 		}
-		if ff&(1<<2) != 0 {
-			p.Text(x1, y2, sx[6], b[0])
+		if bitmask&(1<<2) != 0 {
+			p.Text(x1, y2, sx[6], set[0])
 		}
-		if ff&(1<<0) != 0 {
-			p.Text(x2, y2, sx[8], b[0])
+		if bitmask&(1<<0) != 0 {
+			p.Text(x2, y2, sx[8], set[0])
 		}
 	} else {
-		if ff&(1<<8) != 0 {
+		if bitmask&(1<<8) != 0 {
 			p.Text(x1, y1, sx[0])
 		}
-		if ff&(1<<6) != 0 {
+		if bitmask&(1<<6) != 0 {
 			p.Text(x2, y1, sx[2])
 		}
-		if ff&(1<<2) != 0 {
+		if bitmask&(1<<2) != 0 {
 			p.Text(x1, y2, sx[6])
 		}
-		if ff&(1<<0) != 0 {
+		if bitmask&(1<<0) != 0 {
 			p.Text(x2, y2, sx[8])
 		}
 	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) TextLineH(x1, y1, x2, y2 int, l string, b ...bool) {
+func (p *PixelDING) TextLineH(x1, y1, x2, y2 int, l string, set ...bool) {
 	sx := strings.Split(l, "")
 	hs := ""
 	//lc := strings.Split(l,"")
@@ -684,15 +688,15 @@ func (p *PixelDING) TextLineH(x1, y1, x2, y2 int, l string, b ...bool) {
 		y1, y2 = swap(y1, y2)
 	}
 	hs = strings.Repeat(sx[1], x2-x1)
-	if len(b) > 0 {
-		p.Text(x1, y1, hs, b[0])
+	if len(set) > 0 {
+		p.Text(x1, y1, hs, set[0])
 	} else {
 		p.Text(x1, y1, hs)
 	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) TextLineV(x1, y1, x2, y2 int, l string, b ...bool) {
+func (p *PixelDING) TextLineV(x1, y1, x2, y2 int, l string, set ...bool) {
 	sx := strings.Split(l, "")
 	//lc := strings.Split(l,"")
 	if y1 > y2 {
@@ -700,8 +704,8 @@ func (p *PixelDING) TextLineV(x1, y1, x2, y2 int, l string, b ...bool) {
 		y1, y2 = swap(y1, y2)
 	}
 	for i := y1; i < y2; i++ {
-		if len(b) > 0 {
-			p.Text(x1, i, sx[3], b[0])
+		if len(set) > 0 {
+			p.Text(x1, i, sx[3], set[0])
 		} else {
 			p.Text(x1, i, sx[3])
 		}
@@ -709,9 +713,9 @@ func (p *PixelDING) TextLineV(x1, y1, x2, y2 int, l string, b ...bool) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) Text(x, y int, text string, b ...bool) {
-	if len(b) > 0 {
-		if b[0] == true {
+func (p *PixelDING) Text(x, y int, text string, set ...bool) {
+	if len(set) > 0 {
+		if set[0] == true {
 			x, y = p.scale(x, y)
 			x = x / 2
 			y = y / 2
@@ -756,8 +760,8 @@ func (p *PixelDING) Text(x, y int, text string, b ...bool) {
 	//fmt.Println(cs)
 	//
 	/*
-		for i, b := range s {
-			fmt.Print("[",i,"]",b,string(b),"-")
+		for i, set := range s {
+			fmt.Print("[",i,"]",set,string(set),"-")
 		}
 		fmt.Println(len(s))
 	*/
@@ -778,7 +782,7 @@ func (p *PixelDING) HBar(size int) string {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) SVGPath(xo, yo float64, s string, bs bool, fscale ...float64) {
+func (p *PixelDING) SVGPath(xo, yo float64, s string, set bool, fscale ...float64) {
 	var x, y float64
 	var lx, ly float64
 	var ix, iy float64
@@ -1019,7 +1023,7 @@ func (p *PixelDING) SVGPath(xo, yo float64, s string, bs bool, fscale ...float64
 			//fmt.Println("--------------------------------")
 			switch cmd {
 			case "L", "l":
-				p.Line(int((lx+xo)*scale), int((ly+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), bs)
+				p.Line(int((lx+xo)*scale), int((ly+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
 				lx = x
 				ly = y
 			case "M", "m":
@@ -1028,14 +1032,14 @@ func (p *PixelDING) SVGPath(xo, yo float64, s string, bs bool, fscale ...float64
 				lcx = x //Set the last Control Point to
 				lcy = y
 			case "H", "h":
-				p.Line(int((lx+xo)*scale), int((ly+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), bs)
+				p.Line(int((lx+xo)*scale), int((ly+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
 				lx = x
 			case "V", "v":
-				p.Line(int((lx+xo)*scale), int((ly+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), bs)
+				p.Line(int((lx+xo)*scale), int((ly+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
 				ly = y
 
 			case "C", "c":
-				p.CBezier(int((lx+xo)*scale), int((ly+yo)*scale), int((c1x+xo)*scale), int((c1y+yo)*scale), int((c2x+xo)*scale), int((c2y+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), bs)
+				p.CBezier(int((lx+xo)*scale), int((ly+yo)*scale), int((c1x+xo)*scale), int((c1y+yo)*scale), int((c2x+xo)*scale), int((c2y+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
 				//p.Line(int(lx), int(ly), int(sizeX), int(sizeY))
 				lx = x
 				ly = y
@@ -1046,7 +1050,7 @@ func (p *PixelDING) SVGPath(xo, yo float64, s string, bs bool, fscale ...float64
 				c1x = lx - -(lx - lcx)
 				c1y = ly - -(ly - lcy)
 
-				p.CBezier(int((lx+xo)*scale), int((ly+yo)*scale), int((c1x+xo)*scale), int((c1y+yo)*scale), int((c2x+xo)*scale), int((c2y+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), bs)
+				p.CBezier(int((lx+xo)*scale), int((ly+yo)*scale), int((c1x+xo)*scale), int((c1y+yo)*scale), int((c2x+xo)*scale), int((c2y+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
 				//p.Line(int(lx), int(ly), int(sizeX), int(sizeY))
 				lx = x
 				ly = y
@@ -1057,7 +1061,7 @@ func (p *PixelDING) SVGPath(xo, yo float64, s string, bs bool, fscale ...float64
 
 				//c2x = sizeX- -(sizeX-c1x)
 				//c2y = sizeY- -(sizeY-c1y)
-				p.QBezier(int((lx+xo)*scale), int((ly+yo)*scale), int((c1x+xo)*scale), int((c1y+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), bs)
+				p.QBezier(int((lx+xo)*scale), int((ly+yo)*scale), int((c1x+xo)*scale), int((c1y+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
 				//p.Line(int(lx), int(ly), int(sizeX), int(sizeY))
 				lx = x
 				ly = y
@@ -1068,7 +1072,7 @@ func (p *PixelDING) SVGPath(xo, yo float64, s string, bs bool, fscale ...float64
 				c1x = lx - -(lx - lcx)
 				c1y = ly - -(ly - lcy)
 
-				p.QBezier(int((lx+xo)*scale), int((ly+yo)*scale), int((c1x+xo)*scale), int((c1y+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), bs)
+				p.QBezier(int((lx+xo)*scale), int((ly+yo)*scale), int((c1x+xo)*scale), int((c1y+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
 				//p.Line(int(lx), int(ly), int(sizeX), int(sizeY))
 				lx = x
 				ly = y
@@ -1076,7 +1080,7 @@ func (p *PixelDING) SVGPath(xo, yo float64, s string, bs bool, fscale ...float64
 				lcy = c1y
 
 			case "Z", "z":
-				p.Line(int((lx+xo)*scale), int((ly+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), bs)
+				p.Line(int((lx+xo)*scale), int((ly+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
 				lx = x
 				ly = y
 			}
@@ -1086,7 +1090,7 @@ func (p *PixelDING) SVGPath(xo, yo float64, s string, bs bool, fscale ...float64
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) QBezier(x1, y1, x2, y2, x3, y3 int, bs bool) {
+func (p *PixelDING) QBezier(x1, y1, x2, y2, x3, y3 int, set bool) {
 	var px, py [50 + 1]int
 	x1, y1 = p.scale(x1, y1)
 	x2, y2 = p.scale(x2, y2)
@@ -1105,13 +1109,13 @@ func (p *PixelDING) QBezier(x1, y1, x2, y2, x3, y3 int, bs bool) {
 	x0, y0 := px[0], py[0]
 	for i := 1; i <= p.msteps; i++ {
 		x1, y1 := px[i], py[i]
-		p.Line(x0, y0, x1, y1, bs)
+		p.Line(x0, y0, x1, y1, set)
 		x0, y0 = x1, y1
 	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) CBezier(x1, y1, x2, y2, x3, y3, x4, y4 int, bs bool) {
+func (p *PixelDING) CBezier(x1, y1, x2, y2, x3, y3, x4, y4 int, set bool) {
 	var px, py [50 + 1]int
 	x1, y1 = p.scale(x1, y1)
 	x2, y2 = p.scale(x2, y2)
@@ -1133,7 +1137,7 @@ func (p *PixelDING) CBezier(x1, y1, x2, y2, x3, y3, x4, y4 int, bs bool) {
 	x0, y0 := px[0], py[0]
 	for i := 1; i <= p.msteps; i++ {
 		x1, y1 := px[i], py[i]
-		p.Line(x0, y0, x1, y1, bs)
+		p.Line(x0, y0, x1, y1, set)
 		x0, y0 = x1, y1
 	}
 }
@@ -1161,24 +1165,24 @@ func (p *PixelDING) BezierAlt(x0, y0, x1, y1, x2, y2, x3, y3 int) {
 */
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) Rectangle(x0, y0, x1, y1 int, b bool, f bool) {
+func (p *PixelDING) Rectangle(x0, y0, x1, y1 int, set bool, fill bool) {
 	x0, y0 = p.scale(x0, y0)
 	x1, y1 = p.scale(x1, y1)
 	for i := x0; i <= x1; i++ {
-		p.setPixel(i, y0, b)
+		p.setPixel(i, y0, set)
 	}
 	for i := y0; i < y1; i++ {
-		if f {
+		if fill {
 			for j := x0; j <= x1; j++ {
-				p.setPixel(j, i, b)
+				p.setPixel(j, i, set)
 			}
 		} else {
-			p.setPixel(x0, i, b)
-			p.setPixel(x1, i, b)
+			p.setPixel(x0, i, set)
+			p.setPixel(x1, i, set)
 		}
 	}
 	for i := x0; i <= x1; i++ {
-		p.setPixel(i, y1, b)
+		p.setPixel(i, y1, set)
 	}
 }
 
@@ -1214,7 +1218,7 @@ func toRadian(angle int) float64 {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) DotArc(x0, y0, r int, a1, a2, step int, bs bool) { //wieso
+func (p *PixelDING) DotArc(x0, y0, r int, a1, a2, step int, set bool) { //wieso
 
 	x0, y0 = p.scale(x0, y0)
 	r = p.sscale(r)
@@ -1238,7 +1242,7 @@ func (p *PixelDING) DotArc(x0, y0, r int, a1, a2, step int, bs bool) { //wieso
 		xo := int(math.Round(float64(r) * math.Sin(toRadian(a1%360))))
 		yo := int(math.Round(float64(r) * math.Cos(toRadian(a1%360))))
 
-		p.setPixel(x0+xo, y0-yo, bs)
+		p.setPixel(x0+xo, y0-yo, set)
 
 		a1 += step
 
@@ -1247,7 +1251,7 @@ func (p *PixelDING) DotArc(x0, y0, r int, a1, a2, step int, bs bool) { //wieso
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) LineArc(x0, y0, r int, a1, a2, step int, bs bool) { //wieso
+func (p *PixelDING) LineArc(x0, y0, r int, a1, a2, step int, set bool) { //wieso
 
 	x0, y0 = p.scale(x0, y0)
 	r = p.sscale(r)
@@ -1276,7 +1280,7 @@ func (p *PixelDING) LineArc(x0, y0, r int, a1, a2, step int, bs bool) { //wieso
 		yo := int(math.Round(float64(r) * math.Cos(toRadian(a1%360))))
 
 		if !firstfrom {
-			p.Line(x0+fromx, y0-fromy, x0+xo, y0-yo, bs)
+			p.Line(x0+fromx, y0-fromy, x0+xo, y0-yo, set)
 
 		}
 		firstfrom = false
@@ -1289,29 +1293,24 @@ func (p *PixelDING) LineArc(x0, y0, r int, a1, a2, step int, bs bool) { //wieso
 
 	xo := int(math.Round(float64(r) * math.Sin(toRadian(a2%360))))
 	yo := int(math.Round(float64(r) * math.Cos(toRadian(a2%360))))
-	p.Line(x0+fromx, y0-fromy, x0+xo, y0-yo, bs)
-
+	p.Line(x0+fromx, y0-fromy, x0+xo, y0-yo, set)
 }
-
-func (p *PixelDING) LineRadius(x0,y0,r1,r2,a1 int, bs bool) {
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) LineRadius(x0,y0,r1,r2,a1 int, set bool) {
 	x0, y0 = p.scale(x0, y0)
 	r1 = p.sscale(r1)
 	r2 = p.sscale(r2)
-
 
 	x1 := int(math.Round(float64(r1) * math.Sin(toRadian(a1))))
 	y1 := int(math.Round(float64(r1) * math.Cos(toRadian(a1))))
 	x2 := int(math.Round(float64(r2) * math.Sin(toRadian(a1))))
 	y2 := int(math.Round(float64(r2) * math.Cos(toRadian(a1))))
 
-	p.Line(x0+x1, y0-y1, x0+x2, y0-y2, bs)
-
-
+	p.Line(x0+x1, y0-y1, x0+x2, y0-y2, set)
 }
 
-
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) EllipseRect(x0, y0, x1, y1 int, bs bool) {
+func (p *PixelDING) EllipseRect(x0, y0, x1, y1 int, set bool) {
 	x0, y0 = p.scale(x0, y0)
 	x1, y1 = p.scale(x1, y1)
 	a := abs(x1 - x0)
@@ -1335,10 +1334,10 @@ func (p *PixelDING) EllipseRect(x0, y0, x1, y1 int, bs bool) {
 	a *= 8 * a
 	b1 = 8 * b * b
 	for {
-		p.setPixel(x1, y0, bs)
-		p.setPixel(x0, y0, bs)
-		p.setPixel(x0, y1, bs)
-		p.setPixel(x1, y1, bs)
+		p.setPixel(x1, y0, set)
+		p.setPixel(x0, y0, set)
+		p.setPixel(x0, y1, set)
+		p.setPixel(x1, y1, set)
 		e2 = 2 * e
 		if e2 >= dx {
 			x0++
@@ -1361,27 +1360,27 @@ func (p *PixelDING) EllipseRect(x0, y0, x1, y1 int, bs bool) {
 		if y0-y1 >= b {
 			break
 		}
-		p.setPixel(x0-1, y0, bs)
-		p.setPixel(x1+1, y0, bs)
+		p.setPixel(x0-1, y0, set)
+		p.setPixel(x1+1, y0, set)
 		y0++
-		p.setPixel(x0-1, y1, bs)
-		p.setPixel(x1+1, y1, bs)
+		p.setPixel(x0-1, y1, set)
+		p.setPixel(x1+1, y1, set)
 		y1--
 	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) Circle(x0, y0, r int, bs bool) {
+func (p *PixelDING) Circle(x0, y0, r int, set bool) {
 	x0, y0 = p.scale(x0, y0)
 	r = p.sscale(r)
 	x := -r
 	y := 0
 	e := 2 - 2*r
 	for {
-		p.setPixel(x0-x, y0+y, bs)
-		p.setPixel(x0-y, y0-x, bs)
-		p.setPixel(x0+x, y0-y, bs)
-		p.setPixel(x0+y, y0+x, bs)
+		p.setPixel(x0-x, y0+y, set)
+		p.setPixel(x0-y, y0-x, set)
+		p.setPixel(x0+x, y0-y, set)
+		p.setPixel(x0+y, y0+x, set)
 		r = e
 		if r > x {
 			x++
@@ -1398,7 +1397,7 @@ func (p *PixelDING) Circle(x0, y0, r int, bs bool) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) Line(x0, y0, x1, y1 int, b bool) {
+func (p *PixelDING) Line(x0, y0, x1, y1 int, set bool) {
 	x0, y0 = p.scale(x0, y0)
 	x1, y1 = p.scale(x1, y1)
 	var sx, sy int
@@ -1417,7 +1416,7 @@ func (p *PixelDING) Line(x0, y0, x1, y1 int, b bool) {
 	e1 := dx + dy
 	e2 := 0
 	for {
-		p.setPixel(x0, y0, b)
+		p.setPixel(x0, y0, set)
 		if x0 == x1 && y0 == y1 {
 			break
 		}

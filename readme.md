@@ -128,8 +128,8 @@ pd.Display()        //prints out the rendered buffer from the PixelDING object.
 
 ## Drawing
 
-#### Pixel(x, y int, b bool)
-Put a pixel on the paint area at x,y if b=true. If b=false the pixel is cleared
+#### Pixel(x, y int, set bool)
+Put a pixel on the paint area at x,y if set=true. If set=false the pixel is cleared
 ````GO
 pd.Pixel(25,50, true)   //Paint a Pixel
 pd.Pixel(50,20, false)  //Clear the Pixel
@@ -143,29 +143,29 @@ result := pd.GetPixel(25,50)   //Check if the pixel is set
 ````
 
 ----
-#### Line(x0, y0, x1, y1 int, b bool)
-Paint a simple line from x0,y0 to x1,y1. Set the pixels on b=true otherwise clear them.
+#### Line(x0, y0, x1, y1 int, set bool)
+Paint a simple line from x0,y0 to x1,y1. Set the pixels on set=true otherwise clear them.
 ````GO
 pd.Line(10,10,50,50,true)       //paint a line
 ````
 
 ----
-#### QBezier(x1, y1, x2, y2, x3, y3 int, b bool)
-Quadratic Bezier Curve from x1,y1 to x3,y3, control point x2,y2. Set the pixels on b=true otherwise clear them.
+#### QBezier(x1, y1, x2, y2, x3, y3 int, set bool)
+Quadratic Bezier Curve from x1,y1 to x3,y3, control point x2,y2. Set the pixels on set=true otherwise clear them.
 ````GO
 pd.QBezier(5,50,30,0,50,50)
 ````
 
 ----
-#### CBezier(x1, y1, x2, y2, x3, y3, x4, y4 int, b bool)
-Cubic Bezier from x1,y1 to x4,y4. Control points x2,y2 and x3,y3. Set the pixels on b=true otherwise clear them.
+#### CBezier(x1, y1, x2, y2, x3, y3, x4, y4 int, set bool)
+Cubic Bezier from x1,y1 to x4,y4. Control points x2,y2 and x3,y3. Set the pixels on set=true otherwise clear them.
 ````GO
 pd.CBezier(5,50,5,25,50,25,50,50)
 ````
 
 ----
-#### Rectangle(x0, y0, x1, y1 int, b bool, f bool)
-Draw a rectangle from x0,y0 to x1,y1. Set the pixels on b=true otherwise clear them. Fill the rectangle on f=true
+#### Rectangle(x0, y0, x1, y1 int, set bool, fill bool)
+Draw a rectangle from x0,y0 to x1,y1. Set the pixels on set=true otherwise clear them. Fill the rectangle on fill=true
 ````GO
 pd.Rectangle(10,10,50,50,true)          //Rectangle
 pd.Rectangle(10,10,50,50,true,true)     //Rectangle filled
@@ -179,37 +179,37 @@ pd.Floodfill(22,22)     //Floodfill starting add 22,22
 ````
 
 ----
-#### EllipseRect(x0, y0, x1, y1 int, b bool)
-Draw ellipse in the given box defined by x0,y0 to x1,y1. Set the pixels on b=true otherwise clear them.
+#### EllipseRect(x0, y0, x1, y1 int, set bool)
+Draw ellipse in the given box defined by x0,y0 to x1,y1. Set the pixels on set=true otherwise clear them.
 ````GO
 pd.EllipseRect(10,10,100,50)
 ````
 
 ----
-#### Circle(x0, y0, r int, b bool)
-Draw a circle at x0,y0 with the radius r. Set the pixels on b=true otherwise clear them.
+#### Circle(x0, y0, r int, set bool)
+Draw a circle at x0,y0 with the radius r. Set the pixels on set=true otherwise clear them.
 ````GO
 pd.Circle(25,25,10,true)
 ````
 
 ----
-#### DotArc(x0, y0, r int, a1, a2, step int, bs bool)
-Draw an dotted arc at x0,y0 with the radius r. a1 and a2 specify the degrees from and to. Set the pixels on b=true otherwise clear them.
+#### DotArc(x0, y0, r int, a1, a2, step int, set bool)
+Draw an dotted arc at x0,y0 with the radius r. a1 and a2 specify the degrees from and to. Set the pixels on set=true otherwise clear them.
 The arc is drawn allways clockwise. So the example should show the upper half circle. (9 to 3 on the clock) 
 ````GO
 pd.DotArc(100,100,25,270,90,true)
 ````
 
 ----
-#### LineArc(x0, y0, r int, a1, a2, step int, bs bool)
-Draw an arc at x0,y0 with the radius r. a1 and a2 specify the degrees from and to. Set the pixels on b=true otherwise clear them.
+#### LineArc(x0, y0, r int, a1, a2, step int, set bool)
+Draw an arc at x0,y0 with the radius r. a1 and a2 specify the degrees from and to. Set the pixels on set=true otherwise clear them.
 The arc is drawn allways clockwise. So the example should show the lower half circle. (3 to 9 on the clock)
 ````GO
 pd.LineArc(100,100,25,90,270,true)
 ````
 
 ----
-#### LineRadius(x0,y0,r1,r2,a1 int, bs bool)
+#### LineRadius(x0,y0,r1,r2,a1 int, set bool)
 Draw a line from an circle center point x0,y0 to the given direction in degrees a1.
 The line is starting at the first radius r1 and ends at the second radius r2. Set the pixels on b=true otherwise clear them.
 ````GO
@@ -220,8 +220,8 @@ LineRadius(x0,y0,r1,r2,a1 int, bs bool)
 
 
 ----
-#### SVGPath(xo,yo float64, s string, b bool, fscale ...float64)
-Interprete and draw the path in s. Set the pixels on b=true otherwise clear them. Scale it by fscale.
+#### SVGPath(xo,yo float64, s string, set bool, fscale ...float64)
+Interprete and draw the path in s. Set the pixels on set=true otherwise clear them. Scale it by fscale.
 ````GO
 pd.SVGPath(0, 0, "M 5, 60 c 25, -25 50, 25 75, 12 s 50, 50 75, -15", true)
 ````
@@ -230,8 +230,8 @@ pd.SVGPath(0, 0, "M 5, 60 c 25, -25 50, 25 75, 12 s 50, 50 75, -15", true)
 ## Font and Stamp Loading
 
 ----
-#### FontPrint(font *PixelFont, x, y int, text string, b bool)
-Print out the text string at x,y on the paint area, Set the pixels on b=true otherwise clear them.
+#### FontPrint(font *PixelFont, x, y int, text string, set bool)
+Print out the text string at x,y on the paint area, Set the pixels on set=true otherwise clear them.
 ````GO
 pd.FontPrint(myFont,20,20,"This is a test", true)       //Write on the paint area, mode pixel set
 pd.FontPrint(pd.GetFont("copper"),20,50,"(a+b)=x",true) //Use a stored font "copper"
@@ -389,7 +389,7 @@ All functions has the options to use two coordinates systems. If the paint area 
 Therefor a circle which has as center 30,30, that center for the text functions would be 15,15. That translation could be a mess and so there is a boolean parameter that enable translation.
 If enabled, the coordinates used are the same as for the painting area, additional in that mode the scaling will be used too.
 
-#### TextFrame(x1, y1, x2, y2 int, l string, ff int, b ...bool)
+#### TextFrame(x1, y1, x2, y2 int, l string, bitmask int, btranslate ...bool)
 Draw a Textframe.
 ````GO
 pd.TextFrame(10,10,40,30,pixelding.SingleFrame,0B111111111)
