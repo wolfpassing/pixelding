@@ -21,7 +21,7 @@ const OutOfBoundsError = "out of bounds"
 const AlreadySetError = "already set"
 const DimensionError = "dimension error"
 
-const RegSplitter = "[MmLlHhVvZzCcSsQqTt]|[+-]?\\d+\\.\\d+|[+-]?\\d+|[+-]?\\.\\d+"
+const RegSplitter = "[MmLlHhVvZzCcSsQqTtAa]|[+-]?\\d+\\.\\d+|[+-]?\\d+|[+-]?\\.\\d+"
 
 type PixelDING struct {
 	init         bool
@@ -76,7 +76,7 @@ func New(dimensions ...int) PixelDING {
 	x.stamps = make(map[string]*PixelStamp)
 	x.AddFont("__std", x.LoadStdFont())
 	x.AddStamp("__std", x.LoadStdStamp())
-	x.LastError = x.Dimensions(x.sizeX,x.sizeY)
+	x.LastError = x.Dimensions(x.sizeX, x.sizeY)
 	return x
 }
 
@@ -431,7 +431,6 @@ func (p *PixelDING) RenderXY(x1, y1, x2, y2 int) []string {
 	//xtoggle :=0
 	//ytoggle := 0
 
-
 	for y := y1; y < y2; y = y + 2 - p.aspectY {
 		lo = ""
 		for x := x1; x < x2; x = x + 2 - p.aspectX { // = sizeX + 2 {
@@ -713,12 +712,16 @@ func (p *PixelDING) TextLineV(x1, y1, x2, y2 int, l string, set ...bool) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) Text(x, y int, text string, set ...bool) {
-	if len(set) > 0 {
-		if set[0] == true {
+func (p *PixelDING) Text(x, y int, text string, scale ...bool) {
+	if len(scale) > 0 {
+		if scale[0] == true {
 			x, y = p.scale(x, y)
-			x = x / 2
-			y = y / 2
+			if p.aspectX == 0 {
+				x = x / 2
+			}
+			if p.aspectY == 0 {
+				y = y / 2
+			}
 		}
 	}
 	var n string
@@ -760,8 +763,8 @@ func (p *PixelDING) Text(x, y int, text string, set ...bool) {
 	//fmt.Println(cs)
 	//
 	/*
-		for i, set := range s {
-			fmt.Print("[",i,"]",set,string(set),"-")
+		for i, scale := range s {
+			fmt.Print("[",i,"]",scale,string(scale),"-")
 		}
 		fmt.Println(len(s))
 	*/
@@ -832,6 +835,9 @@ func (p *PixelDING) SVGPath(xo, yo float64, s string, set bool, fscale ...float6
 				x = ix
 				y = iy
 				sw = 9
+			case "A", "a":
+				cmd = ssSub
+				sw = 1
 			default:
 				if p.debug {
 					fmt.Println("Unknown :", ssSub)
@@ -1016,6 +1022,22 @@ func (p *PixelDING) SVGPath(xo, yo float64, s string, set bool, fscale ...float6
 				y = ly + y
 				sw = 9
 
+			case cmd == "A" && sw == 1:
+				x, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 2
+			case cmd == "A" && sw == 2:
+				y, _ = strconv.ParseFloat(ssSub, 64)
+				sw = 9
+
+			case cmd == "a" && sw == 1:
+				x, _ = strconv.ParseFloat(ssSub, 64)
+				x = lx + x
+				sw = 2
+			case cmd == "a" && sw == 2:
+				y, _ = strconv.ParseFloat(ssSub, 64)
+				y = ly + y
+				sw = 9
+
 			}
 		}
 		if sw == 9 {
@@ -1083,6 +1105,12 @@ func (p *PixelDING) SVGPath(xo, yo float64, s string, set bool, fscale ...float6
 				p.Line(int((lx+xo)*scale), int((ly+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
 				lx = x
 				ly = y
+
+			case "A", "a":
+				//simulate by just setting new ends
+				lx = x
+				ly = y
+
 			}
 			sw = 0
 		}
@@ -1231,7 +1259,7 @@ func (p *PixelDING) DotArc(x0, y0, r int, a1, a2, step int, set bool) { //wieso
 		return
 	}
 	if a1 > a2 {
-		a2+=360
+		a2 += 360
 	}
 
 	for {
@@ -1268,7 +1296,7 @@ func (p *PixelDING) LineArc(x0, y0, r int, a1, a2, step int, set bool) { //wieso
 		return
 	}
 	if a1 > a2 {
-		a2+=360
+		a2 += 360
 	}
 
 	for {
@@ -1295,8 +1323,9 @@ func (p *PixelDING) LineArc(x0, y0, r int, a1, a2, step int, set bool) { //wieso
 	yo := int(math.Round(float64(r) * math.Cos(toRadian(a2%360))))
 	p.Line(x0+fromx, y0-fromy, x0+xo, y0-yo, set)
 }
+
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) LineRadius(x0,y0,r1,r2,a1 int, set bool) {
+func (p *PixelDING) LineRadius(x0, y0, r1, r2, a1 int, set bool) {
 	x0, y0 = p.scale(x0, y0)
 	r1 = p.sscale(r1)
 	r2 = p.sscale(r2)
