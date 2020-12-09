@@ -580,7 +580,7 @@ func abs(x int) int {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, bitmask int, set ...bool) {
+func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, bitmask int, scale ...bool) {
 	noLineH := false
 	noLineV := false
 	sx := strings.Split(l, "")
@@ -607,15 +607,15 @@ func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, bitmask int, set ...
 	if noLineV == false {
 		for i := y1 + 1; i < y2; i++ {
 			if bitmask&(1<<5) != 0 {
-				if len(set) > 0 {
-					p.Text(x1, i, sx[3], set[0])
+				if len(scale) > 0 {
+					p.Text(x1, i, sx[3], scale[0])
 				} else {
 					p.Text(x1, i, sx[3])
 				}
 			}
 			if bitmask&(1<<3) != 0 {
-				if len(set) > 0 {
-					p.Text(x2, i, sx[5], set[0])
+				if len(scale) > 0 {
+					p.Text(x2, i, sx[5], scale[0])
 				} else {
 					p.Text(x2, i, sx[5])
 				}
@@ -625,41 +625,41 @@ func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, bitmask int, set ...
 
 	if noLineH == false {
 		hs := x2 - x1 - 1
-		if len(set) > 0 {
-			if set[0] == true {
-				hs = (x2 - x1 - 1) / 2
+		if len(scale) > 0 {
+			if scale[0] == true && p.aspectX==0 {
+				hs = (x2 - x1) / 2
 			}
 		}
 		if bitmask&(1<<7) != 0 {
 			h1 = strings.Repeat(sx[1], hs)
-			if len(set) > 0 {
-				p.Text(x1+1, y1, h1, set[0])
+			if len(scale) > 0 {
+				p.Text(x1+1, y1, h1, scale[0])
 			} else {
 				p.Text(x1+1, y1, h1)
 			}
 		}
 		if bitmask&(1<<1) != 0 {
 			h2 = strings.Repeat(sx[7], hs)
-			if len(set) > 0 {
-				p.Text(x1+1, y2, h2, set[0])
+			if len(scale) > 0 {
+				p.Text(x1+1, y2, h2, scale[0])
 			} else {
 				p.Text(x1+1, y2, h2)
 			}
 		}
 	}
 
-	if len(set) > 0 {
+	if len(scale) > 0 {
 		if bitmask&(1<<8) != 0 {
-			p.Text(x1, y1, sx[0], set[0])
+			p.Text(x1, y1, sx[0], scale[0])
 		}
 		if bitmask&(1<<6) != 0 {
-			p.Text(x2, y1, sx[2], set[0])
+			p.Text(x2, y1, sx[2], scale[0])
 		}
 		if bitmask&(1<<2) != 0 {
-			p.Text(x1, y2, sx[6], set[0])
+			p.Text(x1, y2, sx[6], scale[0])
 		}
 		if bitmask&(1<<0) != 0 {
-			p.Text(x2, y2, sx[8], set[0])
+			p.Text(x2, y2, sx[8], scale[0])
 		}
 	} else {
 		if bitmask&(1<<8) != 0 {
@@ -728,6 +728,11 @@ func (p *PixelDING) Text(x, y int, text string, scale ...bool) {
 	if len(p.buffer) < y+1 {
 		return //Out of bounds
 	}
+
+	if x < 0 || y < 0 {
+		return //Out of bounds
+	}
+
 	sx := strings.Split(text, "")
 	l := len(sx)
 
