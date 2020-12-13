@@ -1465,3 +1465,52 @@ func (p *PixelDING) Line(x0, y0, x1, y1 int, set bool) {
 		}
 	}
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) DotLine(x0, y0, x1, y1 int, set bool, pattern ...uint8) {
+	var pat uint8
+	if len(pattern) == 0 {
+		pat = Dot1x1Pattern
+	} else {
+		pat = pattern[0]
+	}
+
+	x0, y0 = p.scale(x0, y0)
+	x1, y1 = p.scale(x1, y1)
+	var sx, sy int
+	dx := abs(x1 - x0)
+	if x0 < x1 {
+		sx = 1
+	} else {
+		sx = -1
+	}
+	dy := -abs(y1 - y0)
+	if y0 < y1 {
+		sy = 1
+	} else {
+		sy = -1
+	}
+	e1 := dx + dy
+	e2 := 0
+	for {
+		if (pat & 0x01)==0x01 {
+			p.setPixel(x0, y0, set)
+			pat = (pat >> uint8(1)) + 0x80
+		} else {
+			pat = pat >> 1
+		}
+
+		if x0 == x1 && y0 == y1 {
+			break
+		}
+		e2 = 2 * e1
+		if e2 >= dy {
+			e1 += dy
+			x0 += sx
+		}
+		if e2 <= dx {
+			e1 += dx
+			y0 += sy
+		}
+	}
+}

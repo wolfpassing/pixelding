@@ -4,21 +4,32 @@ package pixelding
   	|   |
 	+ - +
 */
-
-const SingleFrame = "\u250C\u2500\u2510\u2502*\u2502\u2514\u2500\u2518"
-const DoubleFrame = "\u2554\u2550\u2557\u2551*\u2551\u255A\u2550\u255D"
-const RoundFrame = "\u256D\u2500\u256E\u2502*\u2502\u2570\u2500\u256F"
-const BlockFrame = "\u259B\u2580\u259C\u258C*\u2590\u2599\u2584\u259F"
-const TextFrame = "+-+|*|+-+"
-
+const (
+	SingleFrame = "\u250C\u2500\u2510\u2502*\u2502\u2514\u2500\u2518"
+	DoubleFrame = "\u2554\u2550\u2557\u2551*\u2551\u255A\u2550\u255D"
+	RoundFrame  = "\u256D\u2500\u256E\u2502*\u2502\u2570\u2500\u256F"
+	BlockFrame  = "\u259B\u2580\u259C\u258C*\u2590\u2599\u2584\u259F"
+	TextFrame   = "+-+|*|+-+"
+)
 const HBar = "\u2588\u258F\u258E\u258D\u258C\u258B\u258A\u2589"
+
+const (
+	Dot1x1Pattern   = 0B01010101  // - - - - - - - - - -
+	Dot2x2Pattern   = 0B00110011  // --  --  --  --  --
+	Dot4x4Pattern   = 0B00001111  // ----    ----    ----
+	Dot1x3Pattern   = 0B00010001  // -   -   -   -   -   -
+	Dot3x2x1Pattern = 0B00100111  // ---  -  ---  -  ---  -
+	Dot6x2Pattern   = 0B00111111  // ------  ------  ------
+	Dot7x1Pattern   = 0B01111111  // ------- ------- -------
+	Dot5x1x1Pattern = 0B01011111  // ----- - ----- - ----- -
+)
 
 /*
 const SingleFrame = [9]string{
 	string(0x250C), string(0x2500), string(0x2510),
 	string(0x2502), string(32), string(0x2502),
 	string(0x2514), string(0x2500), string(0x2518)}
- */
+*/
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) LoadStdStamp() *PixelStamp {
 	StdStamp := PixelStamp{

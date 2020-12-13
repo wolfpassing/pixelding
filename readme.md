@@ -150,6 +150,23 @@ pd.Line(10,10,50,50,true)       //paint a line
 ````
 
 ----
+#### DotLine(x0, y0, x1, y1 int, set bool, pattern uint8)
+Paint a simple line from x0,y0 to x1,y1. Set the pixels on set=true otherwise clear them and use the bit pattern for dotted line variations.
+````GO
+pd.Line(10,10,50,50,true,pixelDing.Dot1x1Pattern)       //paint a line with standard dots
+pd.Line(50,50,10,10,true,0B10010110)       //paint a line with uggly dots :
+````
+>Dot1x1Pattern   `- - - - - - - - - -`   
+>Dot2x2Pattern   `--  --  --  --  --`   
+>Dot4x4Pattern   `----    ----    ----`   
+>Dot1x3Pattern   `-   -   -   -   -   -`   
+>Dot3x2x1Pattern `---  -  ---  -  ---  -`   
+>Dot6x2Pattern   `------  ------  ------`   
+>Dot7x1Pattern   `------- ------- -------`   
+>Dot5x1x1Pattern `----- - ----- - ----- -`   
+
+
+----
 #### QBezier(x1, y1, x2, y2, x3, y3 int, set bool)
 Quadratic Bezier Curve from x1,y1 to x3,y3, control point x2,y2. Set the pixels on set=true otherwise clear them.
 ````GO
