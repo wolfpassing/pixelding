@@ -113,13 +113,18 @@ func minInt(x, y int) int {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func leftBound(x []uint64) ([]uint64, int) {
+func leftBound(x []uint64, z int) ([]uint64, int) {
 	var max uint64
 	var y []uint64
-	for _, u := range x {
-		max = maxUint64(max, u)
+	var c int
+	if z == 0 {
+		for _, u := range x {
+			max = maxUint64(max, u)
+		}
+		c = bits.LeadingZeros64(max)
+	} else {
+		c = 64-z
 	}
-	c := bits.LeadingZeros64(max)
 	for _, u := range x {
 		y = append(y, u<<c)
 	}
@@ -233,9 +238,8 @@ func (p *PixelDING) PrepareFont(x PixelFont) *PixelFont {
 		if char.SizeX == 0 {
 			ch.SizeX = int(max)
 		}
-		fmt.Println("ch",i,"X:",ch.SizeX)
 		ch.SizeY = c
-		ch.Data, ch.Len = leftBound(char.Data)
+		ch.Data, ch.Len = leftBound(char.Data, ch.SizeX)
 		x.Chars[i] = ch
 	}
 	return &x
@@ -312,7 +316,7 @@ func (p *PixelDING) Aspect(x, y int) {
 //----------------------------------------------------------------------------------------------------------------------
 func (s *PixelStamp) X() int {
 	if !s.prepared {
-		s.Data, s.Len = leftBound(s.Data)
+		s.Data, s.Len = leftBound(s.Data,0)
 		s.prepared = true
 	}
 	return 64 - s.Len
@@ -327,7 +331,7 @@ func (s *PixelStamp) Y() int {
 func (p *PixelDING) Stamp(x, y int, stamp *PixelStamp, set bool, st bool) {
 	var j int
 	if !stamp.prepared {
-		stamp.Data, stamp.Len = leftBound(stamp.Data)
+		stamp.Data, stamp.Len = leftBound(stamp.Data,0)
 		stamp.prepared = true
 	}
 	for i, v := range stamp.Data {
