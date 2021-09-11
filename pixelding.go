@@ -217,25 +217,28 @@ func (p *PixelDING) FontPrint(font *PixelFont, x, y int, text string, set bool) 
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func PrepareFont(x PixelFont) PixelFont {
+func (p *PixelDING) PrepareFont(x PixelFont) *PixelFont {
 	var max uint64
 	for i, char := range x.Chars {
 		ch := char
 		c := 0
 		max = 0
-		if char.SizeX != 0 {
-			continue
-		}
+		//if char.SizeX != 0 {
+		//	continue
+		//}
 		for _, datum := range char.Data {
 			max = maxUint64(max, uint64(bits.Len64(datum)))
 			c++
 		}
-		ch.SizeX = int(max)
+		if char.SizeX == 0 {
+			ch.SizeX = int(max)
+		}
+		fmt.Println("ch",i,"X:",ch.SizeX)
 		ch.SizeY = c
 		ch.Data, ch.Len = leftBound(char.Data)
 		x.Chars[i] = ch
 	}
-	return x
+	return &x
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -626,7 +629,7 @@ func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, bitmask int, scale .
 	if noLineH == false {
 		hs := x2 - x1 - 1
 		if len(scale) > 0 {
-			if scale[0] == true && p.aspectX==0 {
+			if scale[0] == true && p.aspectX == 0 {
 				hs = (x2 - x1) / 2
 			}
 		}
@@ -1493,7 +1496,7 @@ func (p *PixelDING) DotLine(x0, y0, x1, y1 int, set bool, pattern ...uint8) {
 	e1 := dx + dy
 	e2 := 0
 	for {
-		if (pat & 0x01)==0x01 {
+		if (pat & 0x01) == 0x01 {
 			p.setPixel(x0, y0, set)
 			pat = (pat >> uint8(1)) + 0x80
 		} else {
