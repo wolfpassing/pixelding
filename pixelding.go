@@ -217,7 +217,7 @@ func (p *PixelDING) FontPrint(font *PixelFont, x, y int, text string, set bool) 
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func prepareFont(x PixelFont) PixelFont {
+func PrepareFont(x PixelFont) PixelFont {
 	var max uint64
 	for i, char := range x.Chars {
 		ch := char

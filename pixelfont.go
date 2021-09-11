@@ -109,6 +109,6 @@ func (p *PixelDING) LoadStdFont() *PixelFont {
 			57: {0, 0, 0, 0, 0, 0, 0, []uint64{0B01110, 0B10001, 0B01111, 0B00001, 0B01110}},
 		},
 	}
-	f := prepareFont(StdFont)
+	f := PrepareFont(StdFont)
 	return &f
 }
