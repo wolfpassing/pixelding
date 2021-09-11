@@ -55,7 +55,10 @@ func (p *PixelDING) LoadStdStamp() *PixelStamp {
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) LoadStdFont() *PixelFont {
 	StdFont := PixelFont{
-		false,
+		Prepared: false,
+		sizex:    0,
+		sizey:    0,
+		Chars:
 		map[int]PixelChar{
 			32: {0, 0, 3, 0, 0, 0, 0, []uint64{0B000, 0B000, 0B000, 0B000, 0B000}},
 			46: {0, 0, 3, 0, 0, 0, 0, []uint64{0B000, 0B000, 0B000, 0B000, 0B010}},

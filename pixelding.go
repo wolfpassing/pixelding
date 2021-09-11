@@ -42,14 +42,23 @@ type PixelDING struct {
 }
 
 type PixelStamp struct {
-	prepared bool     `json:"-"`
+	Prepared bool     `json:"prepared"`
 	Len      int      `json:"len"`
 	Data     []uint64 `json:"data"`
 }
 
 type PixelFont struct {
-	prepared bool              `json:"-"`
+	Prepared bool              `json:"prepared"`
+	sizex    int               `json:"-"`
+	sizey    int               `json:"-"`
+	numchar  int               `json:"-"`
 	Chars    map[int]PixelChar `json:"chars"`
+}
+
+type PixelFontInfo struct {
+	MaxX  int
+	MaxY  int
+	Chars int
 }
 
 type PixelChar struct {
@@ -123,7 +132,7 @@ func leftBound(x []uint64, z int) ([]uint64, int) {
 		}
 		c = bits.LeadingZeros64(max)
 	} else {
-		c = 64-z
+		c = 64 - z
 	}
 	for _, u := range x {
 		y = append(y, u<<c)
@@ -224,6 +233,9 @@ func (p *PixelDING) FontPrint(font *PixelFont, x, y int, text string, set bool) 
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) PrepareFont(x PixelFont) *PixelFont {
 	var max uint64
+	if x.Prepared {
+		return &x
+	}
 	for i, char := range x.Chars {
 		ch := char
 		c := 0
@@ -242,6 +254,7 @@ func (p *PixelDING) PrepareFont(x PixelFont) *PixelFont {
 		ch.Data, ch.Len = leftBound(char.Data, ch.SizeX)
 		x.Chars[i] = ch
 	}
+	x.Prepared = true
 	return &x
 }
 
@@ -266,10 +279,32 @@ func (p *PixelDING) GetStamp(name string) *PixelStamp {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) FontInfo(name string) {
-	for i, char := range p.fonts[name].Chars {
-		fmt.Println("I", i, "X:", char.SizeX, "Y:", char.SizeY)
+func (p *PixelDING) FontInfo(font *PixelFont) (*PixelFontInfo, error) {
+	maxX := 0
+	maxY := 0
+	fi := PixelFontInfo{}
+
+	if !font.Prepared {
+		return &fi, errors.New("font not Prepared")
+	} else {
+		if font.sizex != 0 || font.sizey != 0 {
+			fi.MaxX = font.sizex
+			fi.MaxY = font.sizey
+			fi.Chars = font.numchar
+			return &fi,nil
+		}
 	}
+	for _, char := range font.Chars {
+		maxX = maxInt(maxX, char.SizeX)
+		maxY = maxInt(maxY, char.SizeY)
+	}
+	font.sizex = maxX
+	font.sizex = maxY
+	font.numchar = len(font.Chars)
+	fi.MaxX=maxX
+	fi.MaxY=maxY
+	fi.Chars=len(font.Chars)
+	return &fi,nil
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -315,9 +350,9 @@ func (p *PixelDING) Aspect(x, y int) {
 
 //----------------------------------------------------------------------------------------------------------------------
 func (s *PixelStamp) X() int {
-	if !s.prepared {
-		s.Data, s.Len = leftBound(s.Data,0)
-		s.prepared = true
+	if !s.Prepared {
+		s.Data, s.Len = leftBound(s.Data, 0)
+		s.Prepared = true
 	}
 	return 64 - s.Len
 }
@@ -330,9 +365,9 @@ func (s *PixelStamp) Y() int {
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Stamp(x, y int, stamp *PixelStamp, set bool, st bool) {
 	var j int
-	if !stamp.prepared {
-		stamp.Data, stamp.Len = leftBound(stamp.Data,0)
-		stamp.prepared = true
+	if !stamp.Prepared {
+		stamp.Data, stamp.Len = leftBound(stamp.Data, 0)
+		stamp.Prepared = true
 	}
 	for i, v := range stamp.Data {
 		j = 0
