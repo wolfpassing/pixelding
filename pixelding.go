@@ -24,23 +24,28 @@ const DimensionError = "dimension error"
 const RegSplitter = "[MmLlHhVvZzCcSsQqTtAa]|[+-]?\\d+\\.\\d+|[+-]?\\d+|[+-]?\\.\\d+"
 
 type PixelDING struct {
-	init         bool
-	matrix       [][]uint32
-	sizeX, sizeY int
-	msteps       int
-	aspectX      int
-	aspectY      int
-	scalef       float64
-	debug        bool
-	invert       bool
-	toggle       bool
-	acolor       uint32
-	bcolor       uint32
-	colorrender  bool
-	LastError    error
-	buffer       []string
-	fonts        map[string]*PixelFont
-	stamps       map[string]*PixelStamp
+	init           bool
+	matrix         [][]uint32
+	sizeX, sizeY   int
+	clipsx, clipsy int
+	clipex, clipey int
+	clipping       bool
+	msteps         int
+	aspectX        int
+	aspectY        int
+	faspectX       int
+	faspectY       int
+	scalef         float64
+	debug          bool
+	invert         bool
+	toggle         bool
+	acolor         uint32
+	bcolor         uint32
+	colorrender    bool
+	LastError      error
+	buffer         []string
+	fonts          map[string]*PixelFont
+	stamps         map[string]*PixelStamp
 }
 
 type PixelStamp struct {
@@ -232,12 +237,34 @@ func (p *PixelDING) FontPrint(font *PixelFont, x, y int, text string, set bool, 
 		if ls != 0 && font.Chars[int(z)].GA == ls {
 			v = -1
 		}
-		p.fontStamp(sx+v, sy, font.Chars[int(z)].Data, set)
+		p.fontStamp(sx+v, sy, font.Chars[int(z)].Data, set, p.faspectX, p.faspectY)
 		sx = sx + font.Chars[int(z)].SizeX + 1 + v + offset
+		if p.faspectX > 0 {
+			sx = sx + font.Chars[int(z)].SizeX + 1 + v
+		}
 		ls = font.Chars[int(z)].GN
 	}
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+func (f *PixelChar) Prepare() {
+	c := 0
+	var max uint64
+	for _, datum := range f.Data {
+		max = maxUint64(max, uint64(bits.Len64(datum)))
+		c++
+	}
+	if f.SizeX == 0 {
+		f.SizeX = int(max)
+	}
+	f.SizeY = c
+	f.Data, f.Len = leftBound(f.Data, f.SizeX)
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (f *PixelFont) AddChar(i int, c PixelChar) {
+	f.Chars[i]=c
+}
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) PrepareFont(x PixelFont) *PixelFont {
 	var max uint64
@@ -269,6 +296,14 @@ func (p *PixelDING) PrepareFont(x PixelFont) *PixelFont {
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) AddFont(name string, font *PixelFont) {
 	p.fonts[name] = font
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) RemoveFont(name string) {
+	_, ok := p.fonts[name]
+	if ok {
+		delete(p.fonts, name)
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -325,14 +360,14 @@ func (p *PixelDING) SetStep(x int) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) RGB(r,g,b uint8) uint32 {
-var c uint32
-c = uint32(r)
-c <<= 8
-c += uint32(g)
-c <<= 8
-c += uint32(b)
-return c
+func (p *PixelDING) RGB(r, g, b uint8) uint32 {
+	var c uint32
+	c = uint32(r)
+	c <<= 8
+	c += uint32(g)
+	c <<= 8
+	c += uint32(b)
+	return c
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -385,6 +420,18 @@ func (p *PixelDING) Aspect(x, y int) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) FontAspect(x, y int) {
+	p.faspectX = 0
+	p.faspectY = 0
+	if x > 0 {
+		p.faspectX = 1
+	}
+	if y > 0 {
+		p.faspectY = 1
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 func (s *PixelStamp) X() int {
 	if !s.Prepared {
 		s.Data, s.Len = leftBound(s.Data, 0)
@@ -424,16 +471,28 @@ func (p *PixelDING) Stamp(x, y int, stamp *PixelStamp, set bool, st bool) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) fontStamp(x, y int, stamp []uint64, set bool) {
-	var j int
-	for i, v := range stamp {
-		j = 0
+func (p *PixelDING) fontStamp(x, y int, stamp []uint64, set bool, ax, ay int) {
+	var jx int
+	var jy int
+	jy = 0
+	for _, v := range stamp {
+		jx = 0
 		for xx := uint64(0x8000000000000000); xx > 0; xx = xx >> 1 {
 			if v&xx != 0 {
-				p.setPixel(x+j, y+i, set)
+				p.setPixel(x+jx, y+jy, set)
+				if ax > 0 {
+					p.setPixel(x+jx+1, y+jy, set)
+				}
+				if ay > 0 {
+					p.setPixel(x+jx, y+jy+1, set)
+					if ax > 0 {
+						p.setPixel(x+jx+1, y+jy+1, set)
+					}
+				}
 			}
-			j++
+			jx = jx + 1 + ax
 		}
+		jy = jy + 1 + ay
 	}
 }
 
@@ -537,7 +596,7 @@ func (p *PixelDING) RenderXY(x1, y1, x2, y2 int) []string {
 					lo = lo + coy
 				}
 			}
-			lo=lo+"\033[0m"
+			lo = lo + "\033[0m"
 			afg = math.MaxInt32
 			abg = math.MaxInt32
 			p.buffer = append(p.buffer, lo)
@@ -596,7 +655,23 @@ func (p *PixelDING) Clear() {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) SetClipping(clp bool, xyxy ...int) {
+	p.clipping = clp
+	if len(xyxy)>3 {
+		p.clipsx = xyxy[0]
+		p.clipsy = xyxy[1]
+		p.clipex = xyxy[2]
+		p.clipey = xyxy[3]
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) check(x, y int) bool {
+	if p.clipping {
+		if x < p.clipsx || x > p.clipex || y < p.clipsy || y > p.clipey {
+			return false
+		}
+	}
 	if x < 0 || x > p.sizeX-1 || y < 0 || y > p.sizeY-1 {
 		return false
 	}
