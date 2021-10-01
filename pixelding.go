@@ -25,7 +25,7 @@ const RegSplitter = "[MmLlHhVvZzCcSsQqTtAa]|[+-]?\\d+\\.\\d+|[+-]?\\d+|[+-]?\\.\
 
 type PixelDING struct {
 	init         bool
-	matrix       [][]bool
+	matrix       [][]uint32
 	sizeX, sizeY int
 	msteps       int
 	aspectX      int
@@ -34,7 +34,9 @@ type PixelDING struct {
 	debug        bool
 	invert       bool
 	toggle       bool
-	render       int
+	acolor       uint32
+	bcolor       uint32
+	colorrender  bool
 	LastError    error
 	buffer       []string
 	fonts        map[string]*PixelFont
@@ -81,6 +83,8 @@ func New(dimensions ...int) PixelDING {
 		x.init = true
 	}
 	x.SetStep(0)
+	x.acolor = 1
+	x.bcolor = 0
 	x.fonts = make(map[string]*PixelFont)
 	x.stamps = make(map[string]*PixelStamp)
 	x.AddFont("__std", x.LoadStdFont())
@@ -210,11 +214,15 @@ func (p *PixelDING) LoadStamp(name string) *PixelStamp {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) FontPrint(font *PixelFont, x, y int, text string, set bool) {
+func (p *PixelDING) FontPrint(font *PixelFont, x, y int, text string, set bool, parm ...int) {
 	ls := 0
 	sx := x
 	sy := y
 	v := 0
+	offset := 0
+	if len(parm) > 0 {
+		offset = parm[0]
+	}
 	//_, ok := p.Fonts[font]
 	//if !ok {
 	//	return
@@ -225,7 +233,7 @@ func (p *PixelDING) FontPrint(font *PixelFont, x, y int, text string, set bool) 
 			v = -1
 		}
 		p.fontStamp(sx+v, sy, font.Chars[int(z)].Data, set)
-		sx = sx + font.Chars[int(z)].SizeX + 1 + v
+		sx = sx + font.Chars[int(z)].SizeX + 1 + v + offset
 		ls = font.Chars[int(z)].GN
 	}
 }
@@ -291,7 +299,7 @@ func (p *PixelDING) FontInfo(font *PixelFont) (*PixelFontInfo, error) {
 			fi.MaxX = font.sizex
 			fi.MaxY = font.sizey
 			fi.Chars = font.numchar
-			return &fi,nil
+			return &fi, nil
 		}
 	}
 	for _, char := range font.Chars {
@@ -301,10 +309,10 @@ func (p *PixelDING) FontInfo(font *PixelFont) (*PixelFontInfo, error) {
 	font.sizex = maxX
 	font.sizex = maxY
 	font.numchar = len(font.Chars)
-	fi.MaxX=maxX
-	fi.MaxY=maxY
-	fi.Chars=len(font.Chars)
-	return &fi,nil
+	fi.MaxX = maxX
+	fi.MaxY = maxY
+	fi.Chars = len(font.Chars)
+	return &fi, nil
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -317,8 +325,36 @@ func (p *PixelDING) SetStep(x int) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) RGB(r,g,b uint8) uint32 {
+var c uint32
+c = uint32(r)
+c <<= 8
+c += uint32(g)
+c <<= 8
+c += uint32(b)
+return c
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) Color(c ...uint32) {
+	if len(c) == 1 {
+		p.acolor = c[0]
+	} else {
+		if len(c) == 2 {
+			p.acolor = c[0]
+			p.bcolor = c[1]
+		}
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Toggle(b bool) {
 	p.toggle = b
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) ColorMode(b bool) {
+	p.colorrender = b
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -417,7 +453,7 @@ func (p *PixelDING) RenderSmallest() []string {
 	may = 0
 	for y := 0; y < p.sizeY-1; y++ {
 		for x := 0; x < p.sizeX-1; x++ {
-			if p.matrix[y][x] {
+			if p.matrix[y][x] != 0 {
 				mix = minInt(mix, x)
 				miy = minInt(miy, y)
 				max = maxInt(max, x)
@@ -464,34 +500,77 @@ func (p *PixelDING) RenderXY(x1, y1, x2, y2 int) []string {
 		string(0x259B), // 14
 		string(0x2588), // 15
 	}
+	coy := string(0x2584)
+
+	var afg uint32
+	var abg uint32
+	afg = math.MaxInt32
+	abg = math.MaxInt32
+
 	p.buffer = []string{}
 	lo := ""
-	cmp := true
-	if p.invert {
-		cmp = !cmp
-	}
-	//xtoggle :=0
-	//ytoggle := 0
 
-	for y := y1; y < y2; y = y + 2 - p.aspectY {
-		lo = ""
-		for x := x1; x < x2; x = x + 2 - p.aspectX { // = sizeX + 2 {
-			bit := 0
-			if p.getPixel(x, y) == cmp {
-				bit += 8
+	if p.colorrender {
+
+		for y := y1; y < y2; y = y + 2 {
+			lo = ""
+			for x := x1; x < x2; x++ {
+
+				c1 := p.getPixelC(x, y)
+				c2 := p.getPixelC(x, y+1)
+
+				if c1 == c2 {
+					if abg != c1 {
+						lo = lo + fmt.Sprint("\033[48;2;", (c1>>16)&0xff, ";", (c1>>8)&0xff, ";", c1&0xff, "m")
+						abg = c1
+					}
+					lo = lo + " "
+				} else {
+					if abg != c1 {
+						lo = lo + fmt.Sprint("\033[48;2;", (c1>>16)&0xff, ";", (c1>>8)&0xff, ";", c1&0xff, "m")
+						abg = c1
+					}
+					if afg != c2 {
+						lo = lo + fmt.Sprint("\033[38;2;", (c2>>16)&0xff, ";", (c2>>8)&0xff, ";", c2&0xff, "m")
+						afg = c2
+					}
+					lo = lo + coy
+				}
 			}
-			if p.getPixel(x+1-p.aspectX, y) == cmp {
-				bit += 4
-			}
-			if p.getPixel(x, y+1-p.aspectY) == cmp {
-				bit += 2
-			}
-			if p.getPixel(x+1-p.aspectX, y+1-p.aspectY) == cmp {
-				bit += 1
-			}
-			lo = lo + cox[bit]
+			lo=lo+"\033[0m"
+			afg = math.MaxInt32
+			abg = math.MaxInt32
+			p.buffer = append(p.buffer, lo)
 		}
-		p.buffer = append(p.buffer, lo)
+
+	} else {
+		cmp := true
+		if p.invert {
+			cmp = !cmp
+		}
+		//xtoggle :=0
+		//ytoggle := 0
+
+		for y := y1; y < y2; y = y + 2 - p.aspectY {
+			lo = ""
+			for x := x1; x < x2; x = x + 2 - p.aspectX { // = sizeX + 2 {
+				bit := 0
+				if p.getPixel(x, y) == cmp {
+					bit += 8
+				}
+				if p.getPixel(x+1-p.aspectX, y) == cmp {
+					bit += 4
+				}
+				if p.getPixel(x, y+1-p.aspectY) == cmp {
+					bit += 2
+				}
+				if p.getPixel(x+1-p.aspectX, y+1-p.aspectY) == cmp {
+					bit += 1
+				}
+				lo = lo + cox[bit]
+			}
+			p.buffer = append(p.buffer, lo)
+		}
 	}
 	return p.buffer
 }
@@ -510,9 +589,9 @@ func (p *PixelDING) BufferAnalyse() {
 
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Clear() {
-	p.matrix = make([][]bool, p.sizeY)
+	p.matrix = make([][]uint32, p.sizeY)
 	for i := range p.matrix {
-		p.matrix[i] = make([]bool, p.sizeX)
+		p.matrix[i] = make([]uint32, p.sizeX)
 	}
 }
 
@@ -557,10 +636,10 @@ func (p *PixelDING) Dimensions(x, y int) error {
 		p.LastError = errors.New(DimensionError)
 		return p.LastError
 	}
-	p.matrix = make([][]bool, y)
+	p.matrix = make([][]uint32, y)
 
 	for i := range p.matrix {
-		p.matrix[i] = make([]bool, x)
+		p.matrix[i] = make([]uint32, x)
 	}
 	p.sizeX = x
 	p.sizeY = y
@@ -574,6 +653,18 @@ func (p *PixelDING) getPixel(x, y int) bool {
 	if !p.check(x, y) {
 		return false
 	}
+	if p.matrix[y][x] != 0 {
+		return true
+	}
+	return false
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) getPixelC(x, y int) uint32 {
+	// sizeX, sizeY = p.scale(sizeX, sizeY)
+	if !p.check(x, y) {
+		return 0
+	}
 	return p.matrix[y][x]
 }
 
@@ -582,11 +673,46 @@ func (p *PixelDING) setPixel(x, y int, b bool) {
 	if !p.check(x, y) {
 		return
 	}
-	if p.toggle {
-		p.matrix[y][x] = !p.matrix[y][x]
+	if b {
+		p.matrix[y][x] = p.acolor
 	} else {
-		p.matrix[y][x] = b
+		p.matrix[y][x] = p.bcolor
 	}
+	/*
+		if p.toggle {
+			p.matrix[y][x] = !p.matrix[y][x]
+		} else {
+			p.matrix[y][x] = b
+		}
+	*/
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) setPixelC(x, y int, color uint32) {
+	if !p.check(x, y) {
+		return
+	}
+	p.matrix[y][x] = color
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) GetPixelC(x, y int) uint32 {
+	x, y = p.scale(x, y)
+	/*	if !p.check(x, y) {
+			return false
+		}
+	*/
+	return p.getPixelC(x, y)
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) PixelC(x, y int, color uint32) {
+	x, y = p.scale(x, y)
+	/*	if !p.check(x, y) {
+			return
+		}
+	*/
+	p.setPixelC(x, y, color)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
