@@ -131,17 +131,17 @@ func minInt(x, y int) int {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func leftBound(x []uint64, z int) ([]uint64, int) {
+func leftBound(x []uint64, fixsize int) ([]uint64, int) {
 	var max uint64
 	var y []uint64
 	var c int
-	if z == 0 {
+	if fixsize == 0 {
 		for _, u := range x {
 			max = maxUint64(max, u)
 		}
 		c = bits.LeadingZeros64(max)
 	} else {
-		c = 64 - z
+		c = 64 - fixsize
 	}
 	for _, u := range x {
 		y = append(y, u<<c)
@@ -219,14 +219,14 @@ func (p *PixelDING) LoadStamp(name string) *PixelStamp {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) FontPrint(font *PixelFont, x, y int, text string, set bool, parm ...int) {
+func (p *PixelDING) FontPrint(font *PixelFont, x, y int, text string, set bool, param ...int) {
 	ls := 0
 	sx := x
 	sy := y
 	v := 0
 	offset := 0
-	if len(parm) > 0 {
-		offset = parm[0]
+	if len(param) > 0 {
+		offset = param[0]
 	}
 	//_, ok := p.Fonts[font]
 	//if !ok {
@@ -262,8 +262,8 @@ func (f *PixelChar) Prepare() {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (f *PixelFont) AddChar(i int, c PixelChar) {
-	f.Chars[i]=c
+func (f *PixelFont) AddChar(ix int, char PixelChar) {
+	f.Chars[ix]= char
 }
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) PrepareFont(x PixelFont) *PixelFont {
@@ -308,7 +308,11 @@ func (p *PixelDING) RemoveFont(name string) {
 
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) GetFont(name string) *PixelFont {
-	return p.fonts[name]
+	_,ok := p.fonts[name]
+	if ok {
+		return p.fonts[name]
+	}
+return nil
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -318,7 +322,11 @@ func (p *PixelDING) AddStamp(name string, stamp *PixelStamp) {
 
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) GetStamp(name string) *PixelStamp {
-	return p.stamps[name]
+	_,ok := p.stamps[name]
+	if ok {
+		return p.stamps[name]
+	}
+return nil
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -326,6 +334,9 @@ func (p *PixelDING) FontInfo(font *PixelFont) (*PixelFontInfo, error) {
 	maxX := 0
 	maxY := 0
 	fi := PixelFontInfo{}
+	if font == nil {
+		return nil,nil
+	}
 
 	if !font.Prepared {
 		return &fi, errors.New("font not Prepared")
@@ -351,11 +362,11 @@ func (p *PixelDING) FontInfo(font *PixelFont) (*PixelFontInfo, error) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) SetStep(x int) {
-	if x < 1 || x > 50 {
+func (p *PixelDING) SetStep(steps int) {
+	if steps < 1 || steps > 50 {
 		p.msteps = DefStep
 	} else {
-		p.msteps = x
+		p.msteps = steps
 	}
 }
 
@@ -446,7 +457,7 @@ func (s *PixelStamp) Y() int {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) Stamp(x, y int, stamp *PixelStamp, set bool, st bool) {
+func (p *PixelDING) Stamp(stamp *PixelStamp, x, y int, set bool, st bool) {
 	var j int
 	if !stamp.Prepared {
 		stamp.Data, stamp.Len = leftBound(stamp.Data, 0)
