@@ -17,6 +17,27 @@ const MaxX = 4000
 const MaxY = 2000
 const DefStep = 15
 
+const ModeTrueColor = 3
+const ModeNoColor = 0
+const Mode16Color = 1
+const ModePaletteColor = 2
+const (
+ ColorBlack = 30+iota
+ ColorRed
+ ColorGreen
+ ColorYellow
+ ColorBlue
+ ColorMagenta
+ ColorCyan
+ ColorWhite
+ ColorDefault
+ ColorReset
+)
+
+const ESCHome ="\033[0;0H"
+const ESCClear = "\033[J"
+
+
 const OutOfBoundsError = "out of bounds"
 const AlreadySetError = "already set"
 const DimensionError = "dimension error"
@@ -26,6 +47,7 @@ const RegSplitter = "[MmLlHhVvZzCcSsQqTtAa]|[+-]?\\d+\\.\\d+|[+-]?\\d+|[+-]?\\.\
 type PixelDING struct {
 	init           bool
 	matrix         [][]uint32
+	tmatrix        [][]rune
 	sizeX, sizeY   int
 	clipsx, clipsy int
 	clipex, clipey int
@@ -41,7 +63,7 @@ type PixelDING struct {
 	toggle         bool
 	acolor         uint32
 	bcolor         uint32
-	colorrender    bool
+	colorrender    int
 	LastError      error
 	buffer         []string
 	fonts          map[string]*PixelFont
@@ -53,6 +75,17 @@ type PixelStamp struct {
 	Len      int      `json:"len"`
 	Data     []uint64 `json:"data"`
 }
+
+type PixelPicture struct {
+	Mode     int      `json:"mode"`
+	ColorKey uint32   `json:"colorKey"`
+	SizeX    int      `json:"sizeX"`
+	SizeY    int      `json:"sizeY"`
+	SegX     int      `json:"segX"`
+	SegY     int      `json:"segY"`
+	Data     []uint32 `json:"data"`
+}
+
 
 type PixelFont struct {
 	Prepared bool              `json:"prepared"`
@@ -263,8 +296,9 @@ func (f *PixelChar) Prepare() {
 
 //----------------------------------------------------------------------------------------------------------------------
 func (f *PixelFont) AddChar(ix int, char PixelChar) {
-	f.Chars[ix]= char
+	f.Chars[ix] = char
 }
+
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) PrepareFont(x PixelFont) *PixelFont {
 	var max uint64
@@ -308,11 +342,11 @@ func (p *PixelDING) RemoveFont(name string) {
 
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) GetFont(name string) *PixelFont {
-	_,ok := p.fonts[name]
+	_, ok := p.fonts[name]
 	if ok {
 		return p.fonts[name]
 	}
-return nil
+	return nil
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -322,11 +356,11 @@ func (p *PixelDING) AddStamp(name string, stamp *PixelStamp) {
 
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) GetStamp(name string) *PixelStamp {
-	_,ok := p.stamps[name]
+	_, ok := p.stamps[name]
 	if ok {
 		return p.stamps[name]
 	}
-return nil
+	return nil
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -335,7 +369,7 @@ func (p *PixelDING) FontInfo(font *PixelFont) (*PixelFontInfo, error) {
 	maxY := 0
 	fi := PixelFontInfo{}
 	if font == nil {
-		return nil,nil
+		return nil, nil
 	}
 
 	if !font.Prepared {
@@ -399,8 +433,8 @@ func (p *PixelDING) Toggle(b bool) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) ColorMode(b bool) {
-	p.colorrender = b
+func (p *PixelDING) ColorMode(mode int) {
+	p.colorrender = mode
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -550,6 +584,34 @@ func (p *PixelDING) RenderSmallest() []string {
 	return p.RenderXY(mix, miy, max, may)
 }
 
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) setFG(c uint32) string {
+	switch p.colorrender {
+	case Mode16Color:
+        return fmt.Sprint("\033[1;",c&0xff,"m")
+	case ModePaletteColor:
+		return fmt.Sprint("\033[38;5;", c&0xff,"m")
+	case ModeTrueColor:
+		return fmt.Sprint("\033[38;2;", (c>>16)&0xff, ";", (c>>8)&0xff, ";", c&0xff, "m")
+	}
+	return ""
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) setBG(c uint32) string {
+	switch p.colorrender {
+	case Mode16Color:
+		return fmt.Sprint("\033[1;",c&0xff+10,"m")
+	case ModePaletteColor:
+		return fmt.Sprint("\033[48;5;", c&0xff,"m")
+	case ModeTrueColor:
+		return fmt.Sprint("\033[48;2;", (c>>16)&0xff, ";", (c>>8)&0xff, ";", c&0xff, "m")
+	}
+return ""
+}
+
+
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) RenderXY(x1, y1, x2, y2 int) []string {
 	cox := []string{
@@ -580,8 +642,9 @@ func (p *PixelDING) RenderXY(x1, y1, x2, y2 int) []string {
 	p.buffer = []string{}
 	lo := ""
 
-	if p.colorrender {
 
+    switch p.colorrender {
+	case ModeTrueColor,ModePaletteColor,Mode16Color :
 		for y := y1; y < y2; y = y + 2 {
 			lo = ""
 			for x := x1; x < x2; x++ {
@@ -589,22 +652,39 @@ func (p *PixelDING) RenderXY(x1, y1, x2, y2 int) []string {
 				c1 := p.getPixelC(x, y)
 				c2 := p.getPixelC(x, y+1)
 
-				if c1 == c2 {
+				if p.tmatrix[y/2][x] > 0 {
+
 					if abg != c1 {
-						lo = lo + fmt.Sprint("\033[48;2;", (c1>>16)&0xff, ";", (c1>>8)&0xff, ";", c1&0xff, "m")
-						abg = c1
-					}
-					lo = lo + " "
-				} else {
-					if abg != c1 {
-						lo = lo + fmt.Sprint("\033[48;2;", (c1>>16)&0xff, ";", (c1>>8)&0xff, ";", c1&0xff, "m")
+						//lo = lo + fmt.Sprint("\033[48;2;", (c1>>16)&0xff, ";", (c1>>8)&0xff, ";", c1&0xff, "m")
+						lo = lo + p.setBG(c1) //  fmt.Sprint("\033[48;2;", (c1>>16)&0xff, ";", (c1>>8)&0xff, ";", c1&0xff, "m")
 						abg = c1
 					}
 					if afg != c2 {
-						lo = lo + fmt.Sprint("\033[38;2;", (c2>>16)&0xff, ";", (c2>>8)&0xff, ";", c2&0xff, "m")
+						lo = lo + p.setFG(c2) //fmt.Sprint("\033[38;2;", (c2>>16)&0xff, ";", (c2>>8)&0xff, ";", c2&0xff, "m")
 						afg = c2
 					}
-					lo = lo + coy
+					lo = lo + string(p.tmatrix[y/2][x])
+
+				} else {
+
+					if c1 == c2 {
+						if abg != c1 {
+							lo = lo + p.setBG(c1) //fmt.Sprint("\033[48;2;", (c1>>16)&0xff, ";", (c1>>8)&0xff, ";", c1&0xff, "m")
+							abg = c1
+							afg = c2
+						}
+						lo = lo + " "
+					} else {
+						if abg != c1 {
+							lo = lo + p.setBG(c1) //fmt.Sprint("\033[48;2;", (c1>>16)&0xff, ";", (c1>>8)&0xff, ";", c1&0xff, "m")
+							abg = c1
+						}
+						if afg != c2 {
+							lo = lo + p.setFG(c2) //fmt.Sprint("\033[38;2;", (c2>>16)&0xff, ";", (c2>>8)&0xff, ";", c2&0xff, "m")
+							afg = c2
+						}
+						lo = lo + coy
+					}
 				}
 			}
 			lo = lo + "\033[0m"
@@ -613,7 +693,7 @@ func (p *PixelDING) RenderXY(x1, y1, x2, y2 int) []string {
 			p.buffer = append(p.buffer, lo)
 		}
 
-	} else {
+	case ModeNoColor:
 		cmp := true
 		if p.invert {
 			cmp = !cmp
@@ -660,15 +740,19 @@ func (p *PixelDING) BufferAnalyse() {
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Clear() {
 	p.matrix = make([][]uint32, p.sizeY)
+	p.tmatrix = make([][]rune, (p.sizeY/2)+1)
 	for i := range p.matrix {
 		p.matrix[i] = make([]uint32, p.sizeX)
+	}
+	for i := range p.tmatrix {
+		p.tmatrix[i] = make([]rune, p.sizeX)
 	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) SetClipping(clp bool, xyxy ...int) {
 	p.clipping = clp
-	if len(xyxy)>3 {
+	if len(xyxy) > 3 {
 		p.clipsx = xyxy[0]
 		p.clipsy = xyxy[1]
 		p.clipex = xyxy[2]
@@ -723,9 +807,13 @@ func (p *PixelDING) Dimensions(x, y int) error {
 		return p.LastError
 	}
 	p.matrix = make([][]uint32, y)
+	p.tmatrix = make([][]rune, (y/2)+1)
 
 	for i := range p.matrix {
 		p.matrix[i] = make([]uint32, x)
+	}
+	for i := range p.tmatrix {
+		p.tmatrix[i] = make([]rune, x)
 	}
 	p.sizeX = x
 	p.sizeY = y
@@ -834,7 +922,71 @@ func abs(x int) int {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, bitmask int, scale ...bool) {
+func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, bitmask int) {
+	noLineH := false
+	noLineV := false
+	sx := strings.Split(l, "")
+	h1 := ""
+	h2 := ""
+
+	if x1 > x2 {
+		x1, x2 = x2, x1 //swap(x1, x2)
+	}
+	if y1 > y2 {
+		y1, y2 = y2, y1 //swap(y1, y2)
+	}
+
+	if x2-x1 < 1 || y2-y1 < 1 {
+		return
+	}
+	if x2-x1 < 2 {
+		noLineH = true
+	}
+	if y2-y1 < 2 {
+		noLineV = true
+	}
+
+	if noLineV == false {
+		for i := y1 + 1; i < y2; i++ {
+			if bitmask&(1<<5) != 0 {
+				p.Text(x1, i, sx[3])
+			}
+			if bitmask&(1<<3) != 0 {
+				p.Text(x2, i, sx[5])
+			}
+		}
+	}
+
+	if noLineH == false {
+		hs := x2 - x1 - 1
+
+		if bitmask&(1<<7) != 0 {
+			h1 = strings.Repeat(sx[1], hs)
+			p.Text(x1+1, y1, h1)
+		}
+		if bitmask&(1<<1) != 0 {
+			h2 = strings.Repeat(sx[7], hs)
+			p.Text(x1+1, y2, h2)
+		}
+	}
+
+	if bitmask&(1<<8) != 0 {
+		p.Text(x1, y1, sx[0])
+	}
+	if bitmask&(1<<6) != 0 {
+		p.Text(x2, y1, sx[2])
+	}
+	if bitmask&(1<<2) != 0 {
+		p.Text(x1, y2, sx[6])
+	}
+	if bitmask&(1<<0) != 0 {
+		p.Text(x2, y2, sx[8])
+	}
+
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) TextFrameBuffer(x1, y1, x2, y2 int, l string, bitmask int, scale ...bool) {
 	noLineH := false
 	noLineV := false
 	sx := strings.Split(l, "")
@@ -862,16 +1014,16 @@ func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, bitmask int, scale .
 		for i := y1 + 1; i < y2; i++ {
 			if bitmask&(1<<5) != 0 {
 				if len(scale) > 0 {
-					p.Text(x1, i, sx[3], scale[0])
+					p.TextBuffer(x1, i, sx[3], scale[0])
 				} else {
-					p.Text(x1, i, sx[3])
+					p.TextBuffer(x1, i, sx[3])
 				}
 			}
 			if bitmask&(1<<3) != 0 {
 				if len(scale) > 0 {
-					p.Text(x2, i, sx[5], scale[0])
+					p.TextBuffer(x2, i, sx[5], scale[0])
 				} else {
-					p.Text(x2, i, sx[5])
+					p.TextBuffer(x2, i, sx[5])
 				}
 			}
 		}
@@ -887,52 +1039,52 @@ func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, bitmask int, scale .
 		if bitmask&(1<<7) != 0 {
 			h1 = strings.Repeat(sx[1], hs)
 			if len(scale) > 0 {
-				p.Text(x1+1, y1, h1, scale[0])
+				p.TextBuffer(x1+1, y1, h1, scale[0])
 			} else {
-				p.Text(x1+1, y1, h1)
+				p.TextBuffer(x1+1, y1, h1)
 			}
 		}
 		if bitmask&(1<<1) != 0 {
 			h2 = strings.Repeat(sx[7], hs)
 			if len(scale) > 0 {
-				p.Text(x1+1, y2, h2, scale[0])
+				p.TextBuffer(x1+1, y2, h2, scale[0])
 			} else {
-				p.Text(x1+1, y2, h2)
+				p.TextBuffer(x1+1, y2, h2)
 			}
 		}
 	}
 
 	if len(scale) > 0 {
 		if bitmask&(1<<8) != 0 {
-			p.Text(x1, y1, sx[0], scale[0])
+			p.TextBuffer(x1, y1, sx[0], scale[0])
 		}
 		if bitmask&(1<<6) != 0 {
-			p.Text(x2, y1, sx[2], scale[0])
+			p.TextBuffer(x2, y1, sx[2], scale[0])
 		}
 		if bitmask&(1<<2) != 0 {
-			p.Text(x1, y2, sx[6], scale[0])
+			p.TextBuffer(x1, y2, sx[6], scale[0])
 		}
 		if bitmask&(1<<0) != 0 {
-			p.Text(x2, y2, sx[8], scale[0])
+			p.TextBuffer(x2, y2, sx[8], scale[0])
 		}
 	} else {
 		if bitmask&(1<<8) != 0 {
-			p.Text(x1, y1, sx[0])
+			p.TextBuffer(x1, y1, sx[0])
 		}
 		if bitmask&(1<<6) != 0 {
-			p.Text(x2, y1, sx[2])
+			p.TextBuffer(x2, y1, sx[2])
 		}
 		if bitmask&(1<<2) != 0 {
-			p.Text(x1, y2, sx[6])
+			p.TextBuffer(x1, y2, sx[6])
 		}
 		if bitmask&(1<<0) != 0 {
-			p.Text(x2, y2, sx[8])
+			p.TextBuffer(x2, y2, sx[8])
 		}
 	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) TextLineH(x1, y1, x2, y2 int, l string, set ...bool) {
+func (p *PixelDING) TextLineHBuffer(x1, y1, x2, y2 int, l string, set ...bool) {
 	sx := strings.Split(l, "")
 	hs := ""
 	//lc := strings.Split(l,"")
@@ -942,14 +1094,14 @@ func (p *PixelDING) TextLineH(x1, y1, x2, y2 int, l string, set ...bool) {
 	}
 	hs = strings.Repeat(sx[1], x2-x1)
 	if len(set) > 0 {
-		p.Text(x1, y1, hs, set[0])
+		p.TextBuffer(x1, y1, hs, set[0])
 	} else {
-		p.Text(x1, y1, hs)
+		p.TextBuffer(x1, y1, hs)
 	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) TextLineV(x1, y1, x2, y2 int, l string, set ...bool) {
+func (p *PixelDING) TextLineVBuffer(x1, y1, x2, y2 int, l string, set ...bool) {
 	sx := strings.Split(l, "")
 	//lc := strings.Split(l,"")
 	if y1 > y2 {
@@ -958,15 +1110,39 @@ func (p *PixelDING) TextLineV(x1, y1, x2, y2 int, l string, set ...bool) {
 	}
 	for i := y1; i < y2; i++ {
 		if len(set) > 0 {
-			p.Text(x1, i, sx[3], set[0])
+			p.TextBuffer(x1, i, sx[3], set[0])
 		} else {
-			p.Text(x1, i, sx[3])
+			p.TextBuffer(x1, i, sx[3])
 		}
 	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) Text(x, y int, text string, scale ...bool) {
+func (p *PixelDING) Text(x, y int, text string) {
+	if x < 0 || x > p.sizeX-1 || y < 0 || y > p.sizeY-1 {
+		return
+	}
+
+	xx := x
+	xy := y/2
+	rc := []rune(text)
+
+	for i := range rc {
+
+		if xx > p.sizeX-1 {
+			break
+		}
+		////rs := []rune("\u2220")
+		//r := rune(text[i])
+		p.tmatrix[xy][xx] = rc[i]
+		p.Pixel(xx, xy*2, false)
+		p.Pixel(xx, xy*2+1, true)
+		xx++
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) TextBuffer(x, y int, text string, scale ...bool) {
 	if len(scale) > 0 {
 		if scale[0] == true {
 			x, y = p.scale(x, y)
