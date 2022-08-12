@@ -22,21 +22,20 @@ const ModeNoColor = 0
 const Mode16Color = 1
 const ModePaletteColor = 2
 const (
- ColorBlack = 30+iota
- ColorRed
- ColorGreen
- ColorYellow
- ColorBlue
- ColorMagenta
- ColorCyan
- ColorWhite
- ColorDefault
- ColorReset
+	ColorBlack = 30 + iota
+	ColorRed
+	ColorGreen
+	ColorYellow
+	ColorBlue
+	ColorMagenta
+	ColorCyan
+	ColorWhite
+	ColorDefault
+	ColorReset
 )
 
-const ESCHome ="\033[0;0H"
+const ESCHome = "\033[0;0H"
 const ESCClear = "\033[J"
-
 
 const OutOfBoundsError = "out of bounds"
 const AlreadySetError = "already set"
@@ -68,6 +67,7 @@ type PixelDING struct {
 	buffer         []string
 	fonts          map[string]*PixelFont
 	stamps         map[string]*PixelStamp
+	pics           map[string]*PixelPicture
 }
 
 type PixelStamp struct {
@@ -86,7 +86,6 @@ type PixelPicture struct {
 	Data     []uint32 `json:"data"`
 }
 
-
 type PixelFont struct {
 	Prepared bool              `json:"prepared"`
 	sizex    int               `json:"-"`
@@ -102,8 +101,8 @@ type PixelFontInfo struct {
 }
 
 type PixelChar struct {
-	OffsetX int      `json:"offsetX"`
-	OffestY int      `json:"offsetY"`
+	OffsetX int      `json:"OffsetX"`
+	OffsetY int      `json:"OffsetY"`
 	SizeX   int      `json:"sizeX"`
 	SizeY   int      `json:"sizeY"`
 	Len     int      `json:"len"`
@@ -252,6 +251,33 @@ func (p *PixelDING) LoadStamp(name string) *PixelStamp {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) SavePicture(name string, pic *PixelPicture, perm os.FileMode) error {
+	buf, err := json.Marshal(pic)
+	err = ioutil.WriteFile(name, buf, perm)
+	if err != nil {
+		p.LastError = err
+		return err
+	}
+	return nil
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) LoadPicture(name string) *PixelPicture {
+	x := PixelPicture{}
+	buf, err := ioutil.ReadFile(name)
+	if err != nil {
+		p.LastError = err
+		return nil
+	}
+	err = json.Unmarshal(buf, &x)
+	if err != nil {
+		p.LastError = err
+		return nil
+	}
+	return &x
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) FontPrint(font *PixelFont, x, y int, text string, set bool, param ...int) {
 	ls := 0
 	sx := x
@@ -355,10 +381,40 @@ func (p *PixelDING) AddStamp(name string, stamp *PixelStamp) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) RemoveStamp(name string) {
+	_, ok := p.stamps[name]
+	if ok {
+		delete(p.stamps, name)
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) GetStamp(name string) *PixelStamp {
 	_, ok := p.stamps[name]
 	if ok {
 		return p.stamps[name]
+	}
+	return nil
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) AddPicture(name string, picture *PixelPicture) {
+	p.pics[name] = picture
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) RemovePicture(name string) {
+	_, ok := p.pics[name]
+	if ok {
+		delete(p.pics, name)
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) GetPicture(name string) *PixelPicture {
+	_, ok := p.pics[name]
+	if ok {
+		return p.pics[name]
 	}
 	return nil
 }
@@ -491,6 +547,67 @@ func (s *PixelStamp) Y() int {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) Picture(pic *PixelPicture, x, y int, segment int) {
+	xdehn := 0
+	ydehn := 0
+	xstart := 0
+	ystart := 0
+	if pic.SegX > 0 {
+		xdehn = pic.SizeX / pic.SegX
+	}
+	if pic.SegY > 0 {
+		ydehn = pic.SizeY / pic.SegY
+	}
+
+	if segment > xdehn*ydehn {
+		segment = 1
+	}
+
+	if segment > 0 {
+		//zero based calculation
+		segment--
+		xstart = segment % xdehn
+		ystart = segment / xdehn
+
+		ix := (xstart * pic.SegX) + (ystart * pic.SizeX * pic.SegY)
+		jx := ix
+		/*
+			fmt.Println("PicX", pic.SizeX)
+			fmt.Println("PicY", pic.SizeY)
+			fmt.Println("SegX", pic.SegX)
+			fmt.Println("SegY", pic.SegY)
+
+			fmt.Println("Segment", segment)
+			fmt.Println("xdehn", xdehn)
+			fmt.Println("ydehn", ydehn)
+			fmt.Println("xstart", xstart)
+			fmt.Println("ystart", ystart)
+			fmt.Println("ix", ix)
+		*/
+		for i := 0; i < pic.SegY; i++ {
+			for j := 0; j < pic.SegX; j++ {
+				p.PixelC(x+j, y+i, pic.Data[ix])
+				ix++
+			}
+			ix = jx + pic.SizeX
+			jx = ix
+		}
+
+	} else {
+
+		ix := 0
+
+		for i := 0; i < pic.SizeY; i++ {
+			for j := 0; j < pic.SizeX; j++ {
+				p.PixelC(x+j, y+i, pic.Data[ix])
+				ix++
+			}
+		}
+	}
+
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Stamp(stamp *PixelStamp, x, y int, set bool, st bool) {
 	var j int
 	if !stamp.Prepared {
@@ -584,14 +701,13 @@ func (p *PixelDING) RenderSmallest() []string {
 	return p.RenderXY(mix, miy, max, may)
 }
 
-
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) setFG(c uint32) string {
 	switch p.colorrender {
 	case Mode16Color:
-        return fmt.Sprint("\033[1;",c&0xff,"m")
+		return fmt.Sprint("\033[1;", c&0xff, "m")
 	case ModePaletteColor:
-		return fmt.Sprint("\033[38;5;", c&0xff,"m")
+		return fmt.Sprint("\033[38;5;", c&0xff, "m")
 	case ModeTrueColor:
 		return fmt.Sprint("\033[38;2;", (c>>16)&0xff, ";", (c>>8)&0xff, ";", c&0xff, "m")
 	}
@@ -602,15 +718,14 @@ func (p *PixelDING) setFG(c uint32) string {
 func (p *PixelDING) setBG(c uint32) string {
 	switch p.colorrender {
 	case Mode16Color:
-		return fmt.Sprint("\033[1;",c&0xff+10,"m")
+		return fmt.Sprint("\033[1;", c&0xff+10, "m")
 	case ModePaletteColor:
-		return fmt.Sprint("\033[48;5;", c&0xff,"m")
+		return fmt.Sprint("\033[48;5;", c&0xff, "m")
 	case ModeTrueColor:
 		return fmt.Sprint("\033[48;2;", (c>>16)&0xff, ";", (c>>8)&0xff, ";", c&0xff, "m")
 	}
-return ""
+	return ""
 }
-
 
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) RenderXY(x1, y1, x2, y2 int) []string {
@@ -633,7 +748,6 @@ func (p *PixelDING) RenderXY(x1, y1, x2, y2 int) []string {
 		string(0x2588), // 15
 	}
 	coy := string(0x2584)
-
 	var afg uint32
 	var abg uint32
 	afg = math.MaxInt32
@@ -642,9 +756,8 @@ func (p *PixelDING) RenderXY(x1, y1, x2, y2 int) []string {
 	p.buffer = []string{}
 	lo := ""
 
-
-    switch p.colorrender {
-	case ModeTrueColor,ModePaletteColor,Mode16Color :
+	switch p.colorrender {
+	case ModeTrueColor, ModePaletteColor, Mode16Color:
 		for y := y1; y < y2; y = y + 2 {
 			lo = ""
 			for x := x1; x < x2; x++ {
@@ -667,23 +780,22 @@ func (p *PixelDING) RenderXY(x1, y1, x2, y2 int) []string {
 
 				} else {
 
+					ucoy := true
 					if c1 == c2 {
-						if abg != c1 {
-							lo = lo + p.setBG(c1) //fmt.Sprint("\033[48;2;", (c1>>16)&0xff, ";", (c1>>8)&0xff, ";", c1&0xff, "m")
-							abg = c1
-							afg = c2
-						}
-						lo = lo + " "
-					} else {
-						if abg != c1 {
-							lo = lo + p.setBG(c1) //fmt.Sprint("\033[48;2;", (c1>>16)&0xff, ";", (c1>>8)&0xff, ";", c1&0xff, "m")
-							abg = c1
-						}
-						if afg != c2 {
-							lo = lo + p.setFG(c2) //fmt.Sprint("\033[38;2;", (c2>>16)&0xff, ";", (c2>>8)&0xff, ";", c2&0xff, "m")
-							afg = c2
-						}
+						ucoy = false
+					}
+					if abg != c1 {
+						lo = lo + p.setBG(c1) //fmt.Sprint("\033[48;2;", (c1>>16)&0xff, ";", (c1>>8)&0xff, ";", c1&0xff, "m")
+						abg = c1
+					}
+					if afg != c2 {
+						lo = lo + p.setFG(c2) //fmt.Sprint("\033[38;2;", (c2>>16)&0xff, ";", (c2>>8)&0xff, ";", c2&0xff, "m")
+						afg = c2
+					}
+					if ucoy {
 						lo = lo + coy
+					} else {
+						lo = lo + " "
 					}
 				}
 			}
@@ -1124,7 +1236,7 @@ func (p *PixelDING) Text(x, y int, text string) {
 	}
 
 	xx := x
-	xy := y/2
+	xy := y / 2
 	rc := []rune(text)
 
 	for i := range rc {
