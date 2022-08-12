@@ -461,7 +461,28 @@ func (p *PixelDING) SetStep(steps int) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) RGB(r, g, b uint8) uint32 {
+func RGBMul(color uint32, mod float64) uint32 {
+	var r, g, b float64
+
+	r = float64((color>>16)&0xff) * mod
+	g = float64((color>>8)&0xff) * mod
+	b = float64(color&0xff) * mod
+
+	if r > 255.0 {
+		r = 255.0
+	}
+	if g > 255.0 {
+		g = 255.0
+	}
+	if b > 255.0 {
+		b = 255.0
+	}
+
+	return uint32(r)<<16 + uint32(g)<<8 + uint32(b)
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+func RGB(r, g, b uint8) uint32 {
 	var c uint32
 	c = uint32(r)
 	c <<= 8
