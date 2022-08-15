@@ -40,6 +40,7 @@ const ESCClear = "\033[J"
 const OutOfBoundsError = "out of bounds"
 const AlreadySetError = "already set"
 const DimensionError = "dimension error"
+const ColormodeError = "colormode error"
 
 const RegSplitter = "[MmLlHhVvZzCcSsQqTtAa]|[+-]?\\d+\\.\\d+|[+-]?\\d+|[+-]?\\.\\d+"
 
@@ -131,35 +132,35 @@ func New(dimensions ...int) PixelDING {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func maxUint64(x, y uint64) uint64 {
-	if x > y {
-		return x
+func maxUint64(a, b uint64) uint64 {
+	if a > b {
+		return a
 	}
-	return y
+	return b
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func minUint64(x, y uint64) uint64 {
-	if x > y {
-		return x
+func minUint64(a, b uint64) uint64 {
+	if a > b {
+		return a
 	}
-	return y
+	return b
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func maxInt(x, y int) int {
-	if x > y {
-		return x
+func maxInt(a, b int) int {
+	if a > b {
+		return a
 	}
-	return y
+	return b
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func minInt(x, y int) int {
-	if x < y {
-		return x
+func minInt(a, b int) int {
+	if a < b {
+		return a
 	}
-	return y
+	return b
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -196,10 +197,10 @@ func (p *PixelDING) Y() int {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) SaveFont(name string, font *PixelFont, perm os.FileMode) error {
+func (p *PixelDING) SaveFont(name string, font *PixelFont, permissions os.FileMode) error {
 
 	buf, err := json.Marshal(font)
-	err = ioutil.WriteFile(name, buf, perm)
+	err = ioutil.WriteFile(name, buf, permissions)
 	if err != nil {
 		p.LastError = err
 		return err
@@ -224,9 +225,9 @@ func (p *PixelDING) LoadFont(name string) *PixelFont {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) SaveStamp(name string, stamp *PixelStamp, perm os.FileMode) error {
+func (p *PixelDING) SaveStamp(name string, stamp *PixelStamp, permissions os.FileMode) error {
 	buf, err := json.Marshal(stamp)
-	err = ioutil.WriteFile(name, buf, perm)
+	err = ioutil.WriteFile(name, buf, permissions)
 	if err != nil {
 		p.LastError = err
 		return err
@@ -251,9 +252,9 @@ func (p *PixelDING) LoadStamp(name string) *PixelStamp {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) SavePicture(name string, pic *PixelPicture, perm os.FileMode) error {
-	buf, err := json.Marshal(pic)
-	err = ioutil.WriteFile(name, buf, perm)
+func (p *PixelDING) SavePicture(name string, picture *PixelPicture, permissions os.FileMode) error {
+	buf, err := json.Marshal(picture)
+	err = ioutil.WriteFile(name, buf, permissions)
 	if err != nil {
 		p.LastError = err
 		return err
@@ -278,10 +279,10 @@ func (p *PixelDING) LoadPicture(name string) *PixelPicture {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) FontPrint(font *PixelFont, x, y int, text string, set bool, param ...int) {
+func (p *PixelDING) FontPrint(font *PixelFont, x0, y0 int, text string, set bool, param ...int) {
 	ls := 0
-	sx := x
-	sy := y
+	sx := x0
+	sy := y0
 	v := 0
 	offset := 0
 	if len(param) > 0 {
@@ -510,8 +511,14 @@ func (p *PixelDING) Toggle(b bool) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) ColorMode(mode int) {
-	p.colorrender = mode
+func (p *PixelDING) ColorMode(mode int) error {
+	switch mode {
+	case ModeNoColor, ModePaletteColor, Mode16Color, ModeTrueColor:
+		p.colorrender = mode
+		return nil
+	default:
+		return errors.New(ColormodeError)
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -530,25 +537,25 @@ func (p *PixelDING) Scale(s float64) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) Aspect(x, y int) {
+func (p *PixelDING) Aspect(x0, y0 int) {
 	p.aspectX = 0
 	p.aspectY = 0
-	if x > 0 {
+	if x0 > 0 {
 		p.aspectX = 1
 	}
-	if y > 0 {
+	if y0 > 0 {
 		p.aspectY = 1
 	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) FontAspect(x, y int) {
+func (p *PixelDING) FontAspect(x0, y0 int) {
 	p.faspectX = 0
 	p.faspectY = 0
-	if x > 0 {
+	if x0 > 0 {
 		p.faspectX = 1
 	}
-	if y > 0 {
+	if y0 > 0 {
 		p.faspectY = 1
 	}
 }
@@ -568,16 +575,16 @@ func (s *PixelStamp) Y() int {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) Picture(pic *PixelPicture, x, y int, segment int) {
+func (p *PixelDING) Picture(picture *PixelPicture, x0, y0 int, segment int) {
 	xdehn := 0
 	ydehn := 0
 	xstart := 0
 	ystart := 0
-	if pic.SegX > 0 {
-		xdehn = pic.SizeX / pic.SegX
+	if picture.SegX > 0 {
+		xdehn = picture.SizeX / picture.SegX
 	}
-	if pic.SegY > 0 {
-		ydehn = pic.SizeY / pic.SegY
+	if picture.SegY > 0 {
+		ydehn = picture.SizeY / picture.SegY
 	}
 
 	if segment > xdehn*ydehn {
@@ -590,13 +597,13 @@ func (p *PixelDING) Picture(pic *PixelPicture, x, y int, segment int) {
 		xstart = segment % xdehn
 		ystart = segment / xdehn
 
-		ix := (xstart * pic.SegX) + (ystart * pic.SizeX * pic.SegY)
+		ix := (xstart * picture.SegX) + (ystart * picture.SizeX * picture.SegY)
 		jx := ix
 		/*
-			fmt.Println("PicX", pic.SizeX)
-			fmt.Println("PicY", pic.SizeY)
-			fmt.Println("SegX", pic.SegX)
-			fmt.Println("SegY", pic.SegY)
+			fmt.Println("PicX", picture.SizeX)
+			fmt.Println("PicY", picture.SizeY)
+			fmt.Println("SegX", picture.SegX)
+			fmt.Println("SegY", picture.SegY)
 
 			fmt.Println("Segment", segment)
 			fmt.Println("xdehn", xdehn)
@@ -605,12 +612,12 @@ func (p *PixelDING) Picture(pic *PixelPicture, x, y int, segment int) {
 			fmt.Println("ystart", ystart)
 			fmt.Println("ix", ix)
 		*/
-		for i := 0; i < pic.SegY; i++ {
-			for j := 0; j < pic.SegX; j++ {
-				p.PixelC(x+j, y+i, pic.Data[ix])
+		for i := 0; i < picture.SegY; i++ {
+			for j := 0; j < picture.SegX; j++ {
+				p.PixelC(x0+j, y0+i, picture.Data[ix])
 				ix++
 			}
-			ix = jx + pic.SizeX
+			ix = jx + picture.SizeX
 			jx = ix
 		}
 
@@ -618,9 +625,9 @@ func (p *PixelDING) Picture(pic *PixelPicture, x, y int, segment int) {
 
 		ix := 0
 
-		for i := 0; i < pic.SizeY; i++ {
-			for j := 0; j < pic.SizeX; j++ {
-				p.PixelC(x+j, y+i, pic.Data[ix])
+		for i := 0; i < picture.SizeY; i++ {
+			for j := 0; j < picture.SizeX; j++ {
+				p.PixelC(x0+j, y0+i, picture.Data[ix])
 				ix++
 			}
 		}
@@ -629,7 +636,7 @@ func (p *PixelDING) Picture(pic *PixelPicture, x, y int, segment int) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) Stamp(stamp *PixelStamp, x, y int, set bool, st bool) {
+func (p *PixelDING) Stamp(stamp *PixelStamp, x0, y0 int, set bool, st bool) {
 	var j int
 	if !stamp.Prepared {
 		stamp.Data, stamp.Len = leftBound(stamp.Data, 0)
@@ -639,10 +646,10 @@ func (p *PixelDING) Stamp(stamp *PixelStamp, x, y int, set bool, st bool) {
 		j = 0
 		for xx := uint64(0x8000000000000000); xx > 0; xx = xx >> 1 {
 			if v&xx != 0 {
-				p.setPixel(x+j, y+i, set)
+				p.setPixel(x0+j, y0+i, set)
 			} else {
 				if st {
-					p.setPixel(x+j, y+i, !set)
+					p.setPixel(x0+j, y0+i, !set)
 				}
 			}
 			j++
@@ -654,7 +661,7 @@ func (p *PixelDING) Stamp(stamp *PixelStamp, x, y int, set bool, st bool) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) fontStamp(x, y int, stamp []uint64, set bool, ax, ay int) {
+func (p *PixelDING) fontStamp(x0, y0 int, stamp []uint64, set bool, ax, ay int) {
 	var jx int
 	var jy int
 	jy = 0
@@ -662,14 +669,14 @@ func (p *PixelDING) fontStamp(x, y int, stamp []uint64, set bool, ax, ay int) {
 		jx = 0
 		for xx := uint64(0x8000000000000000); xx > 0; xx = xx >> 1 {
 			if v&xx != 0 {
-				p.setPixel(x+jx, y+jy, set)
+				p.setPixel(x0+jx, y0+jy, set)
 				if ax > 0 {
-					p.setPixel(x+jx+1, y+jy, set)
+					p.setPixel(x0+jx+1, y0+jy, set)
 				}
 				if ay > 0 {
-					p.setPixel(x+jx, y+jy+1, set)
+					p.setPixel(x0+jx, y0+jy+1, set)
 					if ax > 0 {
-						p.setPixel(x+jx+1, y+jy+1, set)
+						p.setPixel(x0+jx+1, y0+jy+1, set)
 					}
 				}
 			}
@@ -894,156 +901,152 @@ func (p *PixelDING) SetClipping(clp bool, xyxy ...int) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) check(x, y int) bool {
+func (p *PixelDING) check(x0, y0 int) bool {
 	if p.clipping {
-		if x < p.clipsx || x > p.clipex || y < p.clipsy || y > p.clipey {
+		if x0 < p.clipsx || x0 > p.clipex || y0 < p.clipsy || y0 > p.clipey {
 			return false
 		}
 	}
-	if x < 0 || x > p.sizeX-1 || y < 0 || y > p.sizeY-1 {
+	if x0 < 0 || x0 > p.sizeX-1 || y0 < 0 || y0 > p.sizeY-1 {
 		return false
 	}
 	return true
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) scale(x, y int) (int, int) {
+func (p *PixelDING) scale(x0, y0 int) (int, int) {
 	if p.scalef != 0.0 {
-		x = int(float64(x) * p.scalef)
-		y = int(float64(y) * p.scalef)
+		x0 = int(float64(x0) * p.scalef)
+		y0 = int(float64(y0) * p.scalef)
 	}
-	return x, y
+	return x0, y0
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) sscale(x int) int {
+func (p *PixelDING) sscale(x0 int) int {
 	if p.scalef != 0.0 {
-		x = int(float64(x) * p.scalef)
+		x0 = int(float64(x0) * p.scalef)
 	}
-	return x
+	return x0
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) Dimensions(x, y int) error {
+func (p *PixelDING) Dimensions(x0, y0 int) error {
 	/*
 		if p.init {
 			p.LastError = errors.New(AlreadySetError)
 			return p.LastError
 		}
 	*/
-	if x < 1 || y < 1 {
+	if x0 < 1 || y0 < 1 {
 		p.LastError = errors.New(DimensionError)
 		return p.LastError
 	}
-	if x > MaxX || y > MaxY {
+	if x0 > MaxX || y0 > MaxY {
 		p.LastError = errors.New(DimensionError)
 		return p.LastError
 	}
-	p.matrix = make([][]uint32, y)
-	p.tmatrix = make([][]rune, (y/2)+1)
+	p.matrix = make([][]uint32, y0)
+	p.tmatrix = make([][]rune, (y0/2)+1)
 
 	for i := range p.matrix {
-		p.matrix[i] = make([]uint32, x)
+		p.matrix[i] = make([]uint32, x0)
 	}
 	for i := range p.tmatrix {
-		p.tmatrix[i] = make([]rune, x)
+		p.tmatrix[i] = make([]rune, x0)
 	}
-	p.sizeX = x
-	p.sizeY = y
+	p.sizeX = x0
+	p.sizeY = y0
 	p.init = true
 	return nil
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) getPixel(x, y int) bool {
+func (p *PixelDING) getPixel(x0, y0 int) bool {
 	// sizeX, sizeY = p.scale(sizeX, sizeY)
-	if !p.check(x, y) {
+	if !p.check(x0, y0) {
 		return false
 	}
-	if p.matrix[y][x] != 0 {
+	if p.matrix[y0][x0] != 0 {
 		return true
 	}
 	return false
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) getPixelC(x, y int) uint32 {
+func (p *PixelDING) getPixelC(x0, y0 int) uint32 {
 	// sizeX, sizeY = p.scale(sizeX, sizeY)
-	if !p.check(x, y) {
+	if !p.check(x0, y0) {
 		return 0
 	}
-	return p.matrix[y][x]
+	return p.matrix[y0][x0]
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) setPixel(x, y int, b bool) {
-	if !p.check(x, y) {
+func (p *PixelDING) setPixel(x0, y0 int, b bool) {
+	if !p.check(x0, y0) {
 		return
 	}
 	if b {
-		p.matrix[y][x] = p.acolor
+		p.matrix[y0][x0] = p.acolor
 	} else {
-		p.matrix[y][x] = p.bcolor
+		p.matrix[y0][x0] = p.bcolor
 	}
 	/*
 		if p.toggle {
-			p.matrix[y][x] = !p.matrix[y][x]
+			p.matrix[y0][x0] = !p.matrix[y0][x0]
 		} else {
-			p.matrix[y][x] = b
+			p.matrix[y0][x0] = b
 		}
 	*/
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) setPixelC(x, y int, color uint32) {
-	if !p.check(x, y) {
+func (p *PixelDING) setPixelC(x0, y0 int, color uint32) {
+	if !p.check(x0, y0) {
 		return
 	}
-	p.matrix[y][x] = color
+	p.matrix[y0][x0] = color
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) GetPixelC(x, y int) uint32 {
-	x, y = p.scale(x, y)
-	/*	if !p.check(x, y) {
+func (p *PixelDING) GetPixelC(x0, y0 int) uint32 {
+	x0, y0 = p.scale(x0, y0)
+	/*	if !p.check(x0, y0) {
 			return false
 		}
 	*/
-	return p.getPixelC(x, y)
+	return p.getPixelC(x0, y0)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) PixelC(x, y int, color uint32) {
-	x, y = p.scale(x, y)
-	/*	if !p.check(x, y) {
+func (p *PixelDING) PixelC(x0, y0 int, color uint32) {
+	x0, y0 = p.scale(x0, y0)
+	/*	if !p.check(x0, y0) {
 			return
 		}
 	*/
-	p.setPixelC(x, y, color)
+	p.setPixelC(x0, y0, color)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) GetPixel(x, y int) bool {
-	x, y = p.scale(x, y)
-	/*	if !p.check(x, y) {
+func (p *PixelDING) GetPixel(x0, y0 int) bool {
+	x0, y0 = p.scale(x0, y0)
+	/*	if !p.check(x0, y0) {
 			return false
 		}
 	*/
-	return p.getPixel(x, y)
+	return p.getPixel(x0, y0)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) Pixel(x, y int, set bool) {
-	x, y = p.scale(x, y)
-	/*	if !p.check(x, y) {
+func (p *PixelDING) Pixel(x0, y0 int, set bool) {
+	x0, y0 = p.scale(x0, y0)
+	/*	if !p.check(x0, y0) {
 			return
 		}
 	*/
-	p.setPixel(x, y, set)
-}
-
-func swap(a, b int) (int, int) {
-	return b, a
+	p.setPixel(x0, y0, set)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1127,10 +1130,10 @@ func (p *PixelDING) TextFrameBuffer(x1, y1, x2, y2 int, l string, bitmask int, s
 	h2 := ""
 
 	if x1 > x2 {
-		x1, x2 = swap(x1, x2)
+		x1, x2 = x2, x1
 	}
 	if y1 > y2 {
-		y1, y2 = swap(y1, y2)
+		y1, y2 = y2, y1
 	}
 
 	if x2-x1 < 1 || y2-y1 < 1 {
@@ -1222,8 +1225,8 @@ func (p *PixelDING) TextLineHBuffer(x1, y1, x2, y2 int, l string, set ...bool) {
 	hs := ""
 	//lc := strings.Split(l,"")
 	if x1 > x2 {
-		x1, x2 = swap(x1, x2)
-		y1, y2 = swap(y1, y2)
+		x1, x2 = x2, x1
+		y1, y2 = y2, y1
 	}
 	hs = strings.Repeat(sx[1], x2-x1)
 	if len(set) > 0 {
@@ -1238,8 +1241,8 @@ func (p *PixelDING) TextLineVBuffer(x1, y1, x2, y2 int, l string, set ...bool) {
 	sx := strings.Split(l, "")
 	//lc := strings.Split(l,"")
 	if y1 > y2 {
-		x1, x2 = swap(x1, x2)
-		y1, y2 = swap(y1, y2)
+		x1, x2 = x2, x1
+		y1, y2 = y2, y1
 	}
 	for i := y1; i < y2; i++ {
 		if len(set) > 0 {
@@ -1251,13 +1254,13 @@ func (p *PixelDING) TextLineVBuffer(x1, y1, x2, y2 int, l string, set ...bool) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) Text(x, y int, text string) {
-	if x < 0 || x > p.sizeX-1 || y < 0 || y > p.sizeY-1 {
+func (p *PixelDING) Text(x0, y0 int, text string) {
+	if x0 < 0 || x0 > p.sizeX-1 || y0 < 0 || y0 > p.sizeY-1 {
 		return
 	}
 
-	xx := x
-	xy := y / 2
+	xx := x0
+	xy := y0 / 2
 	rc := []rune(text)
 
 	for i := range rc {
@@ -1275,40 +1278,40 @@ func (p *PixelDING) Text(x, y int, text string) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) TextBuffer(x, y int, text string, scale ...bool) {
+func (p *PixelDING) TextBuffer(x0, y0 int, text string, scale ...bool) {
 	if len(scale) > 0 {
 		if scale[0] == true {
-			x, y = p.scale(x, y)
+			x0, y0 = p.scale(x0, y0)
 			if p.aspectX == 0 {
-				x = x / 2
+				x0 = x0 / 2
 			}
 			if p.aspectY == 0 {
-				y = y / 2
+				y0 = y0 / 2
 			}
 		}
 	}
 	var n string
-	if len(p.buffer) < y+1 {
+	if len(p.buffer) < y0+1 {
 		return //Out of bounds
 	}
 
-	if x < 0 || y < 0 {
+	if x0 < 0 || y0 < 0 {
 		return //Out of bounds
 	}
 
 	sx := strings.Split(text, "")
 	l := len(sx)
 
-	s := strings.Split(p.buffer[y], "")
+	s := strings.Split(p.buffer[y0], "")
 	sl := len(s)
 
-	if x > sl {
+	if x0 > sl {
 		return //Out of bounds
 	}
 
 	//	fmt.Println("sl", sl, "l", l)
 	cs := 1
-	for i := 0; i < x; i++ {
+	for i := 0; i < x0; i++ {
 		n = n + s[i]
 		cs++
 	}
@@ -1321,7 +1324,7 @@ func (p *PixelDING) TextBuffer(x, y int, text string, scale ...bool) {
 		cs++
 	}
 	//fmt.Println(cs)
-	for i := x + l; i < sl; i++ {
+	for i := x0 + l; i < sl; i++ {
 		if cs > sl {
 			break
 		}
@@ -1336,7 +1339,7 @@ func (p *PixelDING) TextBuffer(x, y int, text string, scale ...bool) {
 		}
 		fmt.Println(len(s))
 	*/
-	p.buffer[y] = n
+	p.buffer[y0] = n
 
 }
 
@@ -1353,7 +1356,7 @@ func (p *PixelDING) HBar(size int) string {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) SVGPath(xo, yo float64, s string, set bool, fscale ...float64) {
+func (p *PixelDING) SVGPath(x0, y0 float64, s string, set bool, fscale ...float64) {
 	var x, y float64
 	var lx, ly float64
 	var ix, iy float64
@@ -1613,7 +1616,7 @@ func (p *PixelDING) SVGPath(xo, yo float64, s string, set bool, fscale ...float6
 			//fmt.Println("--------------------------------")
 			switch cmd {
 			case "L", "l":
-				p.Line(int((lx+xo)*scale), int((ly+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
+				p.Line(int((lx+x0)*scale), int((ly+y0)*scale), int((x+x0)*scale), int((y+y0)*scale), set)
 				lx = x
 				ly = y
 			case "M", "m":
@@ -1622,14 +1625,14 @@ func (p *PixelDING) SVGPath(xo, yo float64, s string, set bool, fscale ...float6
 				lcx = x //Set the last Control Point to
 				lcy = y
 			case "H", "h":
-				p.Line(int((lx+xo)*scale), int((ly+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
+				p.Line(int((lx+x0)*scale), int((ly+y0)*scale), int((x+x0)*scale), int((y+y0)*scale), set)
 				lx = x
 			case "V", "v":
-				p.Line(int((lx+xo)*scale), int((ly+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
+				p.Line(int((lx+x0)*scale), int((ly+y0)*scale), int((x+x0)*scale), int((y+y0)*scale), set)
 				ly = y
 
 			case "C", "c":
-				p.CBezier(int((lx+xo)*scale), int((ly+yo)*scale), int((c1x+xo)*scale), int((c1y+yo)*scale), int((c2x+xo)*scale), int((c2y+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
+				p.CBezier(int((lx+x0)*scale), int((ly+y0)*scale), int((c1x+x0)*scale), int((c1y+y0)*scale), int((c2x+x0)*scale), int((c2y+y0)*scale), int((x+x0)*scale), int((y+y0)*scale), set)
 				//p.Line(int(lx), int(ly), int(sizeX), int(sizeY))
 				lx = x
 				ly = y
@@ -1640,7 +1643,7 @@ func (p *PixelDING) SVGPath(xo, yo float64, s string, set bool, fscale ...float6
 				c1x = lx - -(lx - lcx)
 				c1y = ly - -(ly - lcy)
 
-				p.CBezier(int((lx+xo)*scale), int((ly+yo)*scale), int((c1x+xo)*scale), int((c1y+yo)*scale), int((c2x+xo)*scale), int((c2y+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
+				p.CBezier(int((lx+x0)*scale), int((ly+y0)*scale), int((c1x+x0)*scale), int((c1y+y0)*scale), int((c2x+x0)*scale), int((c2y+y0)*scale), int((x+x0)*scale), int((y+y0)*scale), set)
 				//p.Line(int(lx), int(ly), int(sizeX), int(sizeY))
 				lx = x
 				ly = y
@@ -1651,7 +1654,7 @@ func (p *PixelDING) SVGPath(xo, yo float64, s string, set bool, fscale ...float6
 
 				//c2x = sizeX- -(sizeX-c1x)
 				//c2y = sizeY- -(sizeY-c1y)
-				p.QBezier(int((lx+xo)*scale), int((ly+yo)*scale), int((c1x+xo)*scale), int((c1y+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
+				p.QBezier(int((lx+x0)*scale), int((ly+y0)*scale), int((c1x+x0)*scale), int((c1y+y0)*scale), int((x+x0)*scale), int((y+y0)*scale), set)
 				//p.Line(int(lx), int(ly), int(sizeX), int(sizeY))
 				lx = x
 				ly = y
@@ -1662,7 +1665,7 @@ func (p *PixelDING) SVGPath(xo, yo float64, s string, set bool, fscale ...float6
 				c1x = lx - -(lx - lcx)
 				c1y = ly - -(ly - lcy)
 
-				p.QBezier(int((lx+xo)*scale), int((ly+yo)*scale), int((c1x+xo)*scale), int((c1y+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
+				p.QBezier(int((lx+x0)*scale), int((ly+y0)*scale), int((c1x+x0)*scale), int((c1y+y0)*scale), int((x+x0)*scale), int((y+y0)*scale), set)
 				//p.Line(int(lx), int(ly), int(sizeX), int(sizeY))
 				lx = x
 				ly = y
@@ -1670,7 +1673,7 @@ func (p *PixelDING) SVGPath(xo, yo float64, s string, set bool, fscale ...float6
 				lcy = c1y
 
 			case "Z", "z":
-				p.Line(int((lx+xo)*scale), int((ly+yo)*scale), int((x+xo)*scale), int((y+yo)*scale), set)
+				p.Line(int((lx+x0)*scale), int((ly+y0)*scale), int((x+x0)*scale), int((y+y0)*scale), set)
 				lx = x
 				ly = y
 
@@ -1783,30 +1786,30 @@ func (p *PixelDING) Rectangle(x0, y0, x1, y1 int, set bool, fill bool) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) floodFill(x, y int, prevC, newC bool) {
-	if x < 0 || x >= p.sizeX || y < 0 || y >= p.sizeY {
+func (p *PixelDING) floodFill(x0, y0 int, prevC, newC bool) {
+	if x0 < 0 || x0 >= p.sizeX || y0 < 0 || y0 >= p.sizeY {
 		return
 	}
-	if prevC != p.getPixel(x, y) {
+	if prevC != p.getPixel(x0, y0) {
 		return
 	}
 	// Replace the color at (sizeX, sizeY)
-	p.setPixel(x, y, newC)
+	p.setPixel(x0, y0, newC)
 	// Recur for north, east, south and west
-	p.floodFill(x+1, y, prevC, newC)
-	p.floodFill(x-1, y, prevC, newC)
-	p.floodFill(x, y+1, prevC, newC)
-	p.floodFill(x, y-1, prevC, newC)
+	p.floodFill(x0+1, y0, prevC, newC)
+	p.floodFill(x0-1, y0, prevC, newC)
+	p.floodFill(x0, y0+1, prevC, newC)
+	p.floodFill(x0, y0-1, prevC, newC)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) Fill(x, y int, newC bool) {
-	x, y = p.scale(x, y)
-	prevC := p.getPixel(x, y)
+func (p *PixelDING) Fill(x0, y0 int, newC bool) {
+	x0, y0 = p.scale(x0, y0)
+	prevC := p.getPixel(x0, y0)
 	if prevC == newC {
 		return
 	}
-	p.floodFill(x, y, prevC, newC)
+	p.floodFill(x0, y0, prevC, newC)
 }
 
 func toRadian(angle int) float64 {

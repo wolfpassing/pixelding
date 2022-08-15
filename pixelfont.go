@@ -24,6 +24,7 @@ const (
 	Dot1x3x1Pattern = 0b01011101 // - --- - - --- - - ---
 	Dot5x1x1Pattern = 0b01011111 // ----- - ----- - ----- -
 	Dot1x7Pattern   = 0b00000001 // -       -       -
+	Dot7x2Pattern   = 0b00111111 // -----  -----  -----
 )
 
 /*
