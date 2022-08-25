@@ -33,6 +33,7 @@ const SingleFrame = [9]string{
 	string(0x2502), string(32), string(0x2502),
 	string(0x2514), string(0x2500), string(0x2518)}
 */
+// Load the standard Demo Stamp
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) LoadStdStamp() *PixelStamp {
 	StdStamp := PixelStamp{
@@ -55,6 +56,7 @@ func (p *PixelDING) LoadStdStamp() *PixelStamp {
 	return &StdStamp
 }
 
+// Load the standard Demo Font
 //----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) LoadStdFont() *PixelFont {
 	StdFont := PixelFont{
