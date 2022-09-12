@@ -1780,57 +1780,96 @@ func (p *PixelDING) SVGPath(x0, y0 float64, s string, set bool, fscale ...float6
 
 // QBezier plots a quadratic Bezier in pixelDING
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) QBezier(x1, y1, x2, y2, x3, y3 int, set bool) {
-	var px, py [50 + 1]int
+func (p *PixelDING) QBezier(x1, y1, cx1, cy1, x2, y2 int, set bool) {
+	var px, py int
+	x0 := x1
+	y0 := y1
 	x1, y1 = p.scale(x1, y1)
+	cx1, cy1 = p.scale(cx1, cy1)
 	x2, y2 = p.scale(x2, y2)
-	x3, y3 = p.scale(x3, y3)
 	fx1, fy1 := float64(x1), float64(y1)
-	fx2, fy2 := float64(x2), float64(y2)
-	fx3, fy3 := float64(x3), float64(y3)
+	fx2, fy2 := float64(cx1), float64(cy1)
+	fx3, fy3 := float64(x2), float64(y2)
 	for i := 0; i <= p.msteps; i++ { //range px {
 		//for i := range px {
 		c := float64(i) / float64(p.msteps)
 		a := 1 - c
 		a, b, c := a*a, 2*c*a, c*c
-		px[i] = int(a*fx1 + b*fx2 + c*fx3)
-		py[i] = int(a*fy1 + b*fy2 + c*fy3)
-	}
-	x0, y0 := px[0], py[0]
-	for i := 1; i <= p.msteps; i++ {
-		x1, y1 := px[i], py[i]
-		p.Line(x0, y0, x1, y1, set)
-		x0, y0 = x1, y1
+
+		px = int(a*fx1 + b*fx2 + c*fx3)
+		py = int(a*fy1 + b*fy2 + c*fy3)
+
+		p.Line(x0, y0, px, py, set)
+		x0, y0 = px, py
 	}
 }
 
 // CBezier plots a Bezier from x,y(1) to x,y(2) with two power lines x,y(3) x,y(4)
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) CBezier(x1, y1, x2, y2, x3, y3, x4, y4 int, set bool) {
-	var px, py [50 + 1]int
+func (p *PixelDING) CBezier(x1, y1, cx1, cy1, cx2, cy2, x2, y2 int, set bool) {
+	var px, py int
+	x0 := x1
+	y0 := y1
 	x1, y1 = p.scale(x1, y1)
+	cx1, cy1 = p.scale(cx1, cy1)
+	cx2, cy2 = p.scale(cx2, cy2)
 	x2, y2 = p.scale(x2, y2)
-	x3, y3 = p.scale(x3, y3)
-	x4, y4 = p.scale(x4, y4)
 	fx1, fy1 := float64(x1), float64(y1)
-	fx2, fy2 := float64(x2), float64(y2)
-	fx3, fy3 := float64(x3), float64(y3)
-	fx4, fy4 := float64(x4), float64(y4)
+	fx2, fy2 := float64(cx1), float64(cy1)
+	fx3, fy3 := float64(cx2), float64(cy2)
+	fx4, fy4 := float64(x2), float64(y2)
 	for i := 0; i <= p.msteps; i++ { //range px {
 		//for i := range px {
 		d := float64(i) / float64(p.msteps)
 		a := 1 - d
 		b, c := a*a, d*d
 		a, b, c, d = a*b, 3*b*d, 3*a*c, c*d
-		px[i] = int(a*fx1 + b*fx2 + c*fx3 + d*fx4)
-		py[i] = int(a*fy1 + b*fy2 + c*fy3 + d*fy4)
+
+		px = int(a*fx1 + b*fx2 + c*fx3 + d*fx4)
+		py = int(a*fy1 + b*fy2 + c*fy3 + d*fy4)
+
+		p.Line(x0, y0, px, py, set)
+		x0, y0 = px, py
 	}
-	x0, y0 := px[0], py[0]
-	for i := 1; i <= p.msteps; i++ {
-		x1, y1 := px[i], py[i]
-		p.Line(x0, y0, x1, y1, set)
-		x0, y0 = x1, y1
-	}
+}
+
+// QBezier plots a quadratic Bezier in pixelDING
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) GetQBezierXY(x1, y1, cx1, cy1, x2, y2 int, f float64) (float64, float64) {
+	//	var px, py [50 + 1]int
+	var px, py float64
+	x1, y1 = p.scale(x1, y1)
+	cx1, cy1 = p.scale(cx1, cy1)
+	x2, y2 = p.scale(x2, y2)
+	fx1, fy1 := float64(x1), float64(y1)
+	fx2, fy2 := float64(cx1), float64(cy1)
+	fx3, fy3 := float64(x2), float64(y2)
+	a := 1 - f
+	a, b, c := a*a, 2*f*a, f*f
+	px = a*fx1 + b*fx2 + c*fx3
+	py = a*fy1 + b*fy2 + c*fy3
+	return px, py
+}
+
+// CBezier plots a Bezier from x,y(1) to x,y(2) with two power lines x,y(3) x,y(4)
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) GetCBezierXY(x1, y1, cx1, cy1, cx2, cy2, x2, y2 int, f float64) (float64, float64) {
+	var px, py float64
+	x1, y1 = p.scale(x1, y1)
+	cx1, cy1 = p.scale(cx1, cy1)
+	cx2, cy2 = p.scale(cx2, cy2)
+	x2, y2 = p.scale(x2, y2)
+	fx1, fy1 := float64(x1), float64(y1)
+	fx2, fy2 := float64(cx1), float64(cy1)
+	fx3, fy3 := float64(cx2), float64(cy2)
+	fx4, fy4 := float64(x2), float64(y2)
+	d := f
+	a := 1 - d
+	b, c := a*a, d*d
+	a, b, c, d = a*b, 3*b*d, 3*a*c, c*d
+	px = a*fx1 + b*fx2 + c*fx3 + d*fx4
+	py = a*fy1 + b*fy2 + c*fy3 + d*fy4
+	return px, py
 }
 
 //----------------------------------------------------------------------------------------------------------------------
