@@ -1951,7 +1951,7 @@ func toRadian(angle int) float64 {
 
 // DotArc plot a dotted Arc at x,y with radius r, from degree a1 to degree a2
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) DotArc(x0, y0, r int, a1, a2, step int, set bool) { //wieso
+func (p *PixelDING) DotArcClock(x0, y0, r int, a1, a2, step int, set bool) { //wieso
 
 	x0, y0 = p.scale(x0, y0)
 	r = p.sscale(r)
@@ -1985,7 +1985,7 @@ func (p *PixelDING) DotArc(x0, y0, r int, a1, a2, step int, set bool) { //wieso
 
 // LineArc plot a Arc at x,y with radius r, from degree a1 to degree a2
 //----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) LineArc(x0, y0, r int, a1, a2, step int, set bool) { //wieso
+func (p *PixelDING) LineArcClock(x0, y0, r int, a1, a2, step int, set bool) { //wieso
 
 	x0, y0 = p.scale(x0, y0)
 	r = p.sscale(r)
@@ -2027,6 +2027,87 @@ func (p *PixelDING) LineArc(x0, y0, r int, a1, a2, step int, set bool) { //wieso
 
 	xo := int(math.Round(float64(r) * math.Sin(toRadian(a2%360))))
 	yo := int(math.Round(float64(r) * math.Cos(toRadian(a2%360))))
+	p.Line(x0+fromx, y0-fromy, x0+xo, y0-yo, set)
+}
+
+// DotArc plot a dotted Arc at x,y with radius r, from degree a1 to degree a2
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) DotArc(x0, y0, r int, a1, a2, step int, set bool) { //wieso
+
+	x0, y0 = p.scale(x0, y0)
+	r = p.sscale(r)
+
+	if a1 == a2 {
+		return
+	}
+
+	if a1 < 0 || a2 < 0 || a1 > 360 || a2 > 360 {
+		return
+	}
+	if a1 > a2 {
+		a2 += 360
+	}
+
+	for {
+		if a1 >= a2 {
+			break
+		}
+
+		yo := int(math.Round(float64(r) * math.Sin(toRadian(a1%360))))
+		xo := int(math.Round(float64(r) * math.Cos(toRadian(a1%360))))
+
+		p.setPixel(x0+xo, y0-yo, set)
+
+		a1 += step
+
+	}
+
+}
+
+// LineArc plot a Arc at x,y with radius r, from degree a1 to degree a2
+//----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) LineArc(x0, y0, r int, a1, a2, step int, set bool) { //wieso
+
+	x0, y0 = p.scale(x0, y0)
+	r = p.sscale(r)
+
+	fromx := 0
+	fromy := 0
+	firstfrom := true
+
+	if a1 == a2 {
+		return
+	}
+
+	if a1 < 0 || a2 < 0 || a1 > 360 || a2 > 360 {
+		return
+	}
+	if a1 > a2 {
+		a2 += 360
+	}
+
+	for {
+		if a1 >= a2 {
+			break
+		}
+
+		yo := int(math.Round(float64(r) * math.Sin(toRadian(a1%360))))
+		xo := int(math.Round(float64(r) * math.Cos(toRadian(a1%360))))
+
+		if !firstfrom {
+			p.Line(x0+fromx, y0-fromy, x0+xo, y0-yo, set)
+
+		}
+		firstfrom = false
+		fromx = xo
+		fromy = yo
+
+		a1 += step
+
+	}
+
+	yo := int(math.Round(float64(r) * math.Sin(toRadian(a2%360))))
+	xo := int(math.Round(float64(r) * math.Cos(toRadian(a2%360))))
 	p.Line(x0+fromx, y0-fromy, x0+xo, y0-yo, set)
 }
 
