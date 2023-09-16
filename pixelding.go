@@ -744,11 +744,11 @@ func (p *PixelDING) Display() {
 	}
 }
 
-// Display prints the rendered display buffer to the console + /n for raw modus
+// Display prints the rendered display buffer to the console + /r for raw modus
 // ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) DisplayLn() {
 	for _, b := range p.buffer {
-		fmt.Println(b, "\n")
+		fmt.Println(b, "\r")
 	}
 }
 
