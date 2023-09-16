@@ -744,11 +744,11 @@ func (p *PixelDING) Display() {
 	}
 }
 
-// Display prints the rendered display buffer to the console + /r for raw modus
+// Display prints the rendered display buffer to the console with suffix for raw modus
 // ----------------------------------------------------------------------------------------------------------------------
-func (p *PixelDING) DisplayLn() {
+func (p *PixelDING) DisplaySuff(suffix string) {
 	for _, b := range p.buffer {
-		fmt.Println(b, "\r")
+		fmt.Println(b, suffix)
 	}
 }
 
