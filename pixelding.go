@@ -114,7 +114,7 @@ type PixelChar struct {
 
 // New create a new PixelDING with optional size parameter (x,y), and attaches the
 // standard Font and Stamp, return pixelDING object
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func New(dimensions ...int) PixelDING {
 	x := PixelDING{}
 	if len(dimensions) > 1 {
@@ -134,7 +134,7 @@ func New(dimensions ...int) PixelDING {
 	return x
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func maxUint64(a, b uint64) uint64 {
 	if a > b {
 		return a
@@ -142,7 +142,7 @@ func maxUint64(a, b uint64) uint64 {
 	return b
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func minUint64(a, b uint64) uint64 {
 	if a > b {
 		return a
@@ -150,7 +150,7 @@ func minUint64(a, b uint64) uint64 {
 	return b
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func maxInt(a, b int) int {
 	if a > b {
 		return a
@@ -158,7 +158,7 @@ func maxInt(a, b int) int {
 	return b
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func minInt(a, b int) int {
 	if a < b {
 		return a
@@ -166,7 +166,7 @@ func minInt(a, b int) int {
 	return b
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func leftBound(x []uint64, fixsize int) ([]uint64, int) {
 	var max uint64
 	var y []uint64
@@ -190,19 +190,19 @@ func leftBound(x []uint64, fixsize int) ([]uint64, int) {
 }
 
 // X returns pixelDING maximum X
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) X() int {
 	return p.sizeX
 }
 
 // Y returns pixelDING maximum Y
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Y() int {
 	return p.sizeY
 }
 
 // SaveFont save a font to disk
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) SaveFont(name string, font *PixelFont, permissions os.FileMode) error {
 
 	buf, err := json.Marshal(font)
@@ -215,7 +215,7 @@ func (p *PixelDING) SaveFont(name string, font *PixelFont, permissions os.FileMo
 }
 
 // LoadFont load a font into pixelDING font object
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) LoadFont(name string) *PixelFont {
 	x := PixelFont{}
 	buf, err := ioutil.ReadFile(name)
@@ -232,7 +232,7 @@ func (p *PixelDING) LoadFont(name string) *PixelFont {
 }
 
 // SaveStamp save a stamp to disk
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) SaveStamp(name string, stamp *PixelStamp, permissions os.FileMode) error {
 	buf, err := json.Marshal(stamp)
 	err = ioutil.WriteFile(name, buf, permissions)
@@ -244,7 +244,7 @@ func (p *PixelDING) SaveStamp(name string, stamp *PixelStamp, permissions os.Fil
 }
 
 // LoadStamp load a stamp into pixelDING stamp object
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) LoadStamp(name string) *PixelStamp {
 	x := PixelStamp{}
 	buf, err := ioutil.ReadFile(name)
@@ -261,7 +261,7 @@ func (p *PixelDING) LoadStamp(name string) *PixelStamp {
 }
 
 // SavePicture Save a picture that was created ot converted into memory
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) SavePicture(name string, picture *PixelPicture, permissions os.FileMode) error {
 	buf, err := json.Marshal(picture)
 	err = ioutil.WriteFile(name, buf, permissions)
@@ -273,7 +273,7 @@ func (p *PixelDING) SavePicture(name string, picture *PixelPicture, permissions 
 }
 
 // LoadPicture Load a picture into pixelDING picture object
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) LoadPicture(name string) *PixelPicture {
 	x := PixelPicture{}
 	buf, err := ioutil.ReadFile(name)
@@ -290,7 +290,7 @@ func (p *PixelDING) LoadPicture(name string) *PixelPicture {
 }
 
 // FontPrint Print a text into pixelDING with given font at x,y
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) FontPrint(font *PixelFont, x0, y0 int, text string, set bool, param ...int) {
 	ls := 0
 	sx := x0
@@ -319,7 +319,7 @@ func (p *PixelDING) FontPrint(font *PixelFont, x0, y0 int, text string, set bool
 }
 
 // Prepare This is a compression option to reduce the saved size on disk
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (f *PixelChar) Prepare() {
 	c := 0
 	var max uint64
@@ -335,13 +335,13 @@ func (f *PixelChar) Prepare() {
 }
 
 // AddChar adds a char to a pixelDING font object
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (f *PixelFont) AddChar(ix int, char PixelChar) {
 	f.Chars[ix] = char
 }
 
 // PrepareFont this is a compression option to reduce the saved size on disk
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) PrepareFont(x PixelFont) *PixelFont {
 	var max uint64
 	if x.Prepared {
@@ -370,13 +370,13 @@ func (p *PixelDING) PrepareFont(x PixelFont) *PixelFont {
 }
 
 // AddFont adds a font object to the pixelDING object, replaces existing one
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) AddFont(name string, font *PixelFont) {
 	p.fonts[name] = font
 }
 
 // RemoveFont removes a font object from pixelDING object
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) RemoveFont(name string) {
 	_, ok := p.fonts[name]
 	if ok {
@@ -385,7 +385,7 @@ func (p *PixelDING) RemoveFont(name string) {
 }
 
 // GetFont returns pixelDING font object of existing font, nil if not exist
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) GetFont(name string) *PixelFont {
 	_, ok := p.fonts[name]
 	if ok {
@@ -395,13 +395,13 @@ func (p *PixelDING) GetFont(name string) *PixelFont {
 }
 
 // AddStamp adds a stamp obect to the pixelDING object, replaces existing one
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) AddStamp(name string, stamp *PixelStamp) {
 	p.stamps[name] = stamp
 }
 
 // RemoveStamp removes a stamp object from pixelDING object
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) RemoveStamp(name string) {
 	_, ok := p.stamps[name]
 	if ok {
@@ -410,7 +410,7 @@ func (p *PixelDING) RemoveStamp(name string) {
 }
 
 // GetStamp returns stamp object from pixelDING object
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) GetStamp(name string) *PixelStamp {
 	_, ok := p.stamps[name]
 	if ok {
@@ -420,13 +420,13 @@ func (p *PixelDING) GetStamp(name string) *PixelStamp {
 }
 
 // AddPicture adds a picture object to the pixelDING object
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) AddPicture(name string, picture *PixelPicture) {
 	p.pics[name] = picture
 }
 
 // RemovePicture removes a picture from the PixelDING object
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) RemovePicture(name string) {
 	_, ok := p.pics[name]
 	if ok {
@@ -435,7 +435,7 @@ func (p *PixelDING) RemovePicture(name string) {
 }
 
 // GetPicture returns a picture object from pixelDING or nil if not exist
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) GetPicture(name string) *PixelPicture {
 	_, ok := p.pics[name]
 	if ok {
@@ -445,7 +445,7 @@ func (p *PixelDING) GetPicture(name string) *PixelPicture {
 }
 
 // FontInfo returns a font info structure from font object
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) FontInfo(font *PixelFont) (*PixelFontInfo, error) {
 	maxX := 0
 	maxY := 0
@@ -480,7 +480,7 @@ func (p *PixelDING) FontInfo(font *PixelFont) (*PixelFontInfo, error) {
 // SetStep sets the maximum steps for some curves and other functions
 // use a higher number (up to 50) if you need more quality on bigger curves
 // reduce the steps if you need more performance or drawing smaller curves
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) SetStep(steps int) {
 	if steps < 1 || steps > 50 {
 		p.msteps = DefStep
@@ -490,7 +490,7 @@ func (p *PixelDING) SetStep(steps int) {
 }
 
 // RGBMul experimental color manipulation to dim or brighten colors
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func RGBMul(color uint32, mod float64) uint32 {
 	var r, g, b float64
 
@@ -512,7 +512,7 @@ func RGBMul(color uint32, mod float64) uint32 {
 }
 
 // RGB helper to construct a 32bit color value from R,G,B values
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func RGB(r, g, b uint8) uint32 {
 	var c uint32
 	c = uint32(r)
@@ -526,7 +526,7 @@ func RGB(r, g, b uint8) uint32 {
 // Color set the desired color for drawing
 // Color(a) sets foreground to a
 // Color(a,b) sets foreground to a and background to b
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Color(c ...uint32) {
 	if len(c) == 1 {
 		p.acolor = c[0]
@@ -539,14 +539,14 @@ func (p *PixelDING) Color(c ...uint32) {
 }
 
 // Toggle experimental pixel toggle
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Toggle(b bool) {
 	p.toggle = b
 }
 
 // ColorMode set the desired color mode
 // need to be one of : ModeNoColor, ModePaletteColor, Mode16Color, ModeTrueColor
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) ColorMode(mode int) error {
 	switch mode {
 	case ModeNoColor, ModePaletteColor, Mode16Color, ModeTrueColor:
@@ -558,26 +558,26 @@ func (p *PixelDING) ColorMode(mode int) error {
 }
 
 // Invert experimental pixel inverting
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Invert(b bool) {
 	p.invert = b
 }
 
 // Debug switches some debug messages on (experimental)
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Debug(b bool) {
 	p.debug = b
 }
 
 // Scale set a scalefactor (experimental)
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Scale(s float64) {
 	p.scalef = s
 }
 
 // Aspect sets the aspect ratio for the rendering. On no Colormode the X dimension is
 // doubled. To draw still "perfect" circles you need to set the x aspect ration to 1
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Aspect(x0, y0 int) {
 	p.aspectX = 0
 	p.aspectY = 0
@@ -590,7 +590,7 @@ func (p *PixelDING) Aspect(x0, y0 int) {
 }
 
 // FontAspect doubles font size X and/or Y (experimental)
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) FontAspect(x0, y0 int) {
 	p.faspectX = 0
 	p.faspectY = 0
@@ -603,7 +603,7 @@ func (p *PixelDING) FontAspect(x0, y0 int) {
 }
 
 // X returns maximum X from stamp object
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (s *PixelStamp) X() int {
 	if !s.Prepared {
 		s.Data, s.Len = leftBound(s.Data, 0)
@@ -613,7 +613,7 @@ func (s *PixelStamp) X() int {
 }
 
 // Y return maximum Y from stamp object
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (s *PixelStamp) Y() int {
 	return len(s.Data)
 }
@@ -622,7 +622,7 @@ func (s *PixelStamp) Y() int {
 // if a segment is specified the function is painting only that segment
 // The calculation of the segment is done only via the segment size of the picture
 // SegX and SegY which need to be specified in the picture itself
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Picture(picture *PixelPicture, x0, y0 int, segment int) {
 	xdehn := 0
 	ydehn := 0
@@ -684,7 +684,7 @@ func (p *PixelDING) Picture(picture *PixelPicture, x0, y0 int, segment int) {
 }
 
 // Stamp stamps a stamp object at the given x,y coordinates
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Stamp(stamp *PixelStamp, x0, y0 int, set bool, st bool) {
 	var j int
 	if !stamp.Prepared {
@@ -710,7 +710,7 @@ func (p *PixelDING) Stamp(stamp *PixelStamp, x0, y0 int, set bool, st bool) {
 }
 
 // fontStamp internal
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) fontStamp(x0, y0 int, stamp []uint64, set bool, ax, ay int) {
 	var jx int
 	var jy int
@@ -737,16 +737,24 @@ func (p *PixelDING) fontStamp(x0, y0 int, stamp []uint64, set bool, ax, ay int) 
 }
 
 // Display prints the rendered display buffer to the console
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Display() {
 	for _, b := range p.buffer {
 		fmt.Println(b)
 	}
 }
 
+// Display prints the rendered display buffer to the console
+// ----------------------------------------------------------------------------------------------------------------------
+func (p *PixelDING) DisplayLn() {
+	for _, b := range p.buffer {
+		fmt.Println(b, "\n")
+	}
+}
+
 // RenderSmallest calculates the minimal output and renders only that area
 // Note: on multicolor mode the background color specifie the background color
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) RenderSmallest(color ...uint32) []string {
 	var mix, max, miy, may int
 	cc := uint32(0)
@@ -788,7 +796,7 @@ func (p *PixelDING) RenderSmallest(color ...uint32) []string {
 }
 
 // setFG internal
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) setFG(c uint32) string {
 	switch p.colorrender {
 	case Mode16Color:
@@ -802,7 +810,7 @@ func (p *PixelDING) setFG(c uint32) string {
 }
 
 // setBG internal
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) setBG(c uint32) string {
 	switch p.colorrender {
 	case Mode16Color:
@@ -816,7 +824,7 @@ func (p *PixelDING) setBG(c uint32) string {
 }
 
 // RenderXY renders a given rectangle from pixelDING, given by x1,y1 to x2,y2
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) RenderXY(x1, y1, x2, y2 int) []string {
 	cox := []string{
 		string(32),     // 0
@@ -927,13 +935,13 @@ func (p *PixelDING) RenderXY(x1, y1, x2, y2 int) []string {
 }
 
 // Render renders a pixelDING object
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Render() []string {
 	return p.RenderXY(0, 0, p.sizeX, p.sizeY)
 }
 
 // bufferAnalyse internal
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) bufferAnalyse() {
 	for i, s := range p.buffer {
 		fmt.Println(i, len(s))
@@ -941,7 +949,7 @@ func (p *PixelDING) bufferAnalyse() {
 }
 
 // Clear empty the pixelDING drawing buffer
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Clear() {
 	p.matrix = make([][]uint32, p.sizeY)
 	p.tmatrix = make([][]rune, (p.sizeY/2)+1)
@@ -957,7 +965,7 @@ func (p *PixelDING) Clear() {
 // SetClipping (true, 100,100,200,200) set cliping to arectangle 100,100 to 200,200
 // SetClipping (false) deactivate clipping
 // SetClipping (true) activate clipping with the last given area
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) SetClipping(clp bool, xyxy ...int) {
 	p.clipping = clp
 	if len(xyxy) > 3 {
@@ -969,7 +977,7 @@ func (p *PixelDING) SetClipping(clp bool, xyxy ...int) {
 }
 
 // check internal
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) check(x0, y0 int) bool {
 	if p.clipping {
 		if x0 < p.clipsx || x0 > p.clipex || y0 < p.clipsy || y0 > p.clipey {
@@ -983,7 +991,7 @@ func (p *PixelDING) check(x0, y0 int) bool {
 }
 
 // scale internal
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) scale(x0, y0 int) (int, int) {
 	if p.scalef != 0.0 {
 		x0 = int(float64(x0) * p.scalef)
@@ -993,7 +1001,7 @@ func (p *PixelDING) scale(x0, y0 int) (int, int) {
 }
 
 // sscale internal
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) sscale(x0 int) int {
 	if p.scalef != 0.0 {
 		x0 = int(float64(x0) * p.scalef)
@@ -1002,7 +1010,7 @@ func (p *PixelDING) sscale(x0 int) int {
 }
 
 // Dimensions sets the dimensions of a pixelDING by x,y
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Dimensions(x0, y0 int) error {
 	/*
 		if p.init {
@@ -1034,7 +1042,7 @@ func (p *PixelDING) Dimensions(x0, y0 int) error {
 }
 
 // getPixel internal
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) getPixel(x0, y0 int) bool {
 	// sizeX, sizeY = p.scale(sizeX, sizeY)
 	if !p.check(x0, y0) {
@@ -1047,7 +1055,7 @@ func (p *PixelDING) getPixel(x0, y0 int) bool {
 }
 
 // getPixelC internal
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) getPixelC(x0, y0 int) uint32 {
 	// sizeX, sizeY = p.scale(sizeX, sizeY)
 	if !p.check(x0, y0) {
@@ -1057,7 +1065,7 @@ func (p *PixelDING) getPixelC(x0, y0 int) uint32 {
 }
 
 // setPixel internal
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) setPixel(x0, y0 int, b bool) {
 	if !p.check(x0, y0) {
 		return
@@ -1077,7 +1085,7 @@ func (p *PixelDING) setPixel(x0, y0 int, b bool) {
 }
 
 // setPixelC internal
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) setPixelC(x0, y0 int, color uint32) {
 	if !p.check(x0, y0) {
 		return
@@ -1086,7 +1094,7 @@ func (p *PixelDING) setPixelC(x0, y0 int, color uint32) {
 }
 
 // GetPixelC gets the color of the Pixel at x,y
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) GetPixelC(x0, y0 int) uint32 {
 	x0, y0 = p.scale(x0, y0)
 	/*	if !p.check(x0, y0) {
@@ -1097,7 +1105,7 @@ func (p *PixelDING) GetPixelC(x0, y0 int) uint32 {
 }
 
 // PixelC set the Pixel at x,y to color
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) PixelC(x0, y0 int, color uint32) {
 	x0, y0 = p.scale(x0, y0)
 	/*	if !p.check(x0, y0) {
@@ -1108,7 +1116,7 @@ func (p *PixelDING) PixelC(x0, y0 int, color uint32) {
 }
 
 // GetPixel return true if the pixel is set (none color mode)
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) GetPixel(x0, y0 int) bool {
 	x0, y0 = p.scale(x0, y0)
 	/*	if !p.check(x0, y0) {
@@ -1119,7 +1127,7 @@ func (p *PixelDING) GetPixel(x0, y0 int) bool {
 }
 
 // Pixel set the Pixel on x,y as set (none colore mode)
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Pixel(x0, y0 int, set bool) {
 	x0, y0 = p.scale(x0, y0)
 	/*	if !p.check(x0, y0) {
@@ -1130,7 +1138,7 @@ func (p *PixelDING) Pixel(x0, y0 int, set bool) {
 }
 
 // abs internal
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func abs(x int) int {
 	if x < 0 {
 		return -x
@@ -1139,7 +1147,7 @@ func abs(x int) int {
 }
 
 // TextFrame set various text frames
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, bitmask int) {
 	noLineH := false
 	noLineV := false
@@ -1204,7 +1212,7 @@ func (p *PixelDING) TextFrame(x1, y1, x2, y2 int, l string, bitmask int) {
 }
 
 // TextFrameBuffer Put a text Frame in the rendered buffer
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) TextFrameBuffer(x1, y1, x2, y2 int, l string, bitmask int, scale ...bool) {
 	noLineH := false
 	noLineV := false
@@ -1303,7 +1311,7 @@ func (p *PixelDING) TextFrameBuffer(x1, y1, x2, y2 int, l string, bitmask int, s
 }
 
 // TextLineHBuffer splits a text horizontal in the rendered buffer
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) TextLineHBuffer(x1, y1, x2, y2 int, l string, set ...bool) {
 	sx := strings.Split(l, "")
 	hs := ""
@@ -1321,7 +1329,7 @@ func (p *PixelDING) TextLineHBuffer(x1, y1, x2, y2 int, l string, set ...bool) {
 }
 
 // TextLineVBuffer splits a text vertical into the rendered buffer
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) TextLineVBuffer(x1, y1, x2, y2 int, l string, set ...bool) {
 	sx := strings.Split(l, "")
 	//lc := strings.Split(l,"")
@@ -1339,7 +1347,7 @@ func (p *PixelDING) TextLineVBuffer(x1, y1, x2, y2 int, l string, set ...bool) {
 }
 
 // Text put a text on x,y to the pixelDING
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Text(x0, y0 int, text string) {
 	if x0 < 0 || x0 > p.sizeX-1 || y0 < 0 || y0 > p.sizeY-1 {
 		return
@@ -1364,7 +1372,7 @@ func (p *PixelDING) Text(x0, y0 int, text string) {
 }
 
 // TextBuffer put a text on x,y in the rendered buffer
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) TextBuffer(x0, y0 int, text string, scale ...bool) {
 	if len(scale) > 0 {
 		if scale[0] == true {
@@ -1431,7 +1439,7 @@ func (p *PixelDING) TextBuffer(x0, y0 int, text string, scale ...bool) {
 }
 
 // HBar return a horizontal bar string
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) HBar(size int) string {
 	sx := strings.Split(HBar, "")
 	e := size / 8
@@ -1445,7 +1453,7 @@ func (p *PixelDING) HBar(size int) string {
 
 // SVGPath draws a standard SVG path at x,y
 // There is at the moment the arc function missing (work in progress)
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) SVGPath(x0, y0 float64, s string, set bool, fscale ...float64) {
 	var x, y float64
 	var lx, ly float64
@@ -1779,7 +1787,7 @@ func (p *PixelDING) SVGPath(x0, y0 float64, s string, set bool, fscale ...float6
 }
 
 // QBezier plots a quadratic Bezier in pixelDING
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) QBezier(x1, y1, cx1, cy1, x2, y2 int, set bool) {
 	var px, py int
 	x0 := x1
@@ -1805,7 +1813,7 @@ func (p *PixelDING) QBezier(x1, y1, cx1, cy1, x2, y2 int, set bool) {
 }
 
 // CBezier plots a Bezier from x,y(1) to x,y(2) with two power lines x,y(3) x,y(4)
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) CBezier(x1, y1, cx1, cy1, cx2, cy2, x2, y2 int, set bool) {
 	var px, py int
 	x0 := x1
@@ -1834,7 +1842,7 @@ func (p *PixelDING) CBezier(x1, y1, cx1, cy1, cx2, cy2, x2, y2 int, set bool) {
 }
 
 // QBezier plots a quadratic Bezier in pixelDING
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) GetQBezierXY(x1, y1, cx1, cy1, x2, y2 int, f float64) (float64, float64) {
 	//	var px, py [50 + 1]int
 	var px, py float64
@@ -1852,7 +1860,7 @@ func (p *PixelDING) GetQBezierXY(x1, y1, cx1, cy1, x2, y2 int, f float64) (float
 }
 
 // CBezier plots a Bezier from x,y(1) to x,y(2) with two power lines x,y(3) x,y(4)
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) GetCBezierXY(x1, y1, cx1, cy1, cx2, cy2, x2, y2 int, f float64) (float64, float64) {
 	var px, py float64
 	x1, y1 = p.scale(x1, y1)
@@ -1917,7 +1925,7 @@ func (p *PixelDING) Rectangle(x0, y0, x1, y1 int, set bool, fill bool) {
 }
 
 // floodfill internal
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) floodFill(x0, y0 int, prevC, newC bool) {
 	if x0 < 0 || x0 >= p.sizeX || y0 < 0 || y0 >= p.sizeY {
 		return
@@ -1935,7 +1943,7 @@ func (p *PixelDING) floodFill(x0, y0 int, prevC, newC bool) {
 }
 
 // Fill floodfills the area, starting with the pixel color at x,y
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Fill(x0, y0 int, newC bool) {
 	x0, y0 = p.scale(x0, y0)
 	prevC := p.getPixel(x0, y0)
@@ -1950,7 +1958,8 @@ func toRadian(angle int) float64 {
 }
 
 // DotArc plot a dotted Arc at x,y with radius r, from degree a1 to degree a2
-//----------------------------------------------------------------------------------------------------------------------
+// NOTE: the angle 0° is at 12 o'clock, 90° at 3 o'clock, 180° at 6 o'clock, 270° at 9 o'clock
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) DotArcClock(x0, y0, r int, a1, a2, step int, set bool) { //wieso
 
 	x0, y0 = p.scale(x0, y0)
@@ -1984,7 +1993,8 @@ func (p *PixelDING) DotArcClock(x0, y0, r int, a1, a2, step int, set bool) { //w
 }
 
 // LineArc plot a Arc at x,y with radius r, from degree a1 to degree a2
-//----------------------------------------------------------------------------------------------------------------------
+// NOTE: the angle 0° is at 12 o'clock, 90° at 3 o'clock, 180° at 6 o'clock, 270° at 9 o'clock
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) LineArcClock(x0, y0, r int, a1, a2, step int, set bool) { //wieso
 
 	x0, y0 = p.scale(x0, y0)
@@ -2031,7 +2041,7 @@ func (p *PixelDING) LineArcClock(x0, y0, r int, a1, a2, step int, set bool) { //
 }
 
 // DotArc plot a dotted Arc at x,y with radius r, from degree a1 to degree a2
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) DotArc(x0, y0, r int, a1, a2, step int, set bool) { //wieso
 
 	x0, y0 = p.scale(x0, y0)
@@ -2065,7 +2075,7 @@ func (p *PixelDING) DotArc(x0, y0, r int, a1, a2, step int, set bool) { //wieso
 }
 
 // LineArc plot a Arc at x,y with radius r, from degree a1 to degree a2
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) LineArc(x0, y0, r int, a1, a2, step int, set bool) { //wieso
 
 	x0, y0 = p.scale(x0, y0)
@@ -2114,7 +2124,7 @@ func (p *PixelDING) LineArc(x0, y0, r int, a1, a2, step int, set bool) { //wieso
 // LineRadius draw a line from center x,y(0) to degree a1 from radius r1 to r2
 // r1 is the distance from center to r1. If you want o draw from center r1 = 0.0
 // and r2 is the max radius.
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) LineRadius(x0, y0, r1, r2, a1 int, set bool) {
 	x0, y0 = p.scale(x0, y0)
 	r1 = p.sscale(r1)
@@ -2129,7 +2139,7 @@ func (p *PixelDING) LineRadius(x0, y0, r1, r2, a1 int, set bool) {
 }
 
 // EllipseRect draw a Elipse which fits into the box given by x,y(0) to x,y(1)
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) EllipseRect(x0, y0, x1, y1 int, set bool) {
 	x0, y0 = p.scale(x0, y0)
 	x1, y1 = p.scale(x1, y1)
@@ -2190,7 +2200,7 @@ func (p *PixelDING) EllipseRect(x0, y0, x1, y1 int, set bool) {
 }
 
 // Circle draw a Circle
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Circle(x0, y0, r int, set bool) {
 	x0, y0 = p.scale(x0, y0)
 	r = p.sscale(r)
@@ -2218,7 +2228,7 @@ func (p *PixelDING) Circle(x0, y0, r int, set bool) {
 }
 
 // Line draw a line
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) Line(x0, y0, x1, y1 int, set bool) {
 	x0, y0 = p.scale(x0, y0)
 	x1, y1 = p.scale(x1, y1)
@@ -2255,7 +2265,7 @@ func (p *PixelDING) Line(x0, y0, x1, y1 int, set bool) {
 }
 
 // DotLine draw a line, specified by the pattern
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) DotLine(x0, y0, x1, y1 int, set bool, pattern ...uint8) {
 	var pat uint8
 	if len(pattern) == 0 {
