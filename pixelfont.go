@@ -1,8 +1,9 @@
 package pixelding
 
-/*	+ - +
-  	|   |
-	+ - +
+/*
+  - - +
+    |   |
+  - - +
 */
 const (
 	SingleFrame = "\u250C\u2500\u2510\u2502*\u2502\u2514\u2500\u2518"
@@ -57,7 +58,7 @@ func (p *PixelDING) LoadStdStamp() *PixelStamp {
 }
 
 // Load the standard Demo Font
-//----------------------------------------------------------------------------------------------------------------------
+// ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) LoadStdFont() *PixelFont {
 	StdFont := PixelFont{
 		Prepared: false,

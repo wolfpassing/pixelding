@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"math/bits"
 	"os"
@@ -206,7 +205,7 @@ func (p *PixelDING) Y() int {
 func (p *PixelDING) SaveFont(name string, font *PixelFont, permissions os.FileMode) error {
 
 	buf, err := json.Marshal(font)
-	err = ioutil.WriteFile(name, buf, permissions)
+	err = os.WriteFile(name, buf, permissions)
 	if err != nil {
 		p.LastError = err
 		return err
@@ -218,7 +217,7 @@ func (p *PixelDING) SaveFont(name string, font *PixelFont, permissions os.FileMo
 // ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) LoadFont(name string) *PixelFont {
 	x := PixelFont{}
-	buf, err := ioutil.ReadFile(name)
+	buf, err := os.ReadFile(name)
 	if err != nil {
 		p.LastError = err
 		return nil
@@ -235,7 +234,7 @@ func (p *PixelDING) LoadFont(name string) *PixelFont {
 // ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) SaveStamp(name string, stamp *PixelStamp, permissions os.FileMode) error {
 	buf, err := json.Marshal(stamp)
-	err = ioutil.WriteFile(name, buf, permissions)
+	err = os.WriteFile(name, buf, permissions)
 	if err != nil {
 		p.LastError = err
 		return err
@@ -247,7 +246,7 @@ func (p *PixelDING) SaveStamp(name string, stamp *PixelStamp, permissions os.Fil
 // ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) LoadStamp(name string) *PixelStamp {
 	x := PixelStamp{}
-	buf, err := ioutil.ReadFile(name)
+	buf, err := os.ReadFile(name)
 	if err != nil {
 		p.LastError = err
 		return nil
@@ -264,7 +263,7 @@ func (p *PixelDING) LoadStamp(name string) *PixelStamp {
 // ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) SavePicture(name string, picture *PixelPicture, permissions os.FileMode) error {
 	buf, err := json.Marshal(picture)
-	err = ioutil.WriteFile(name, buf, permissions)
+	err = os.WriteFile(name, buf, permissions)
 	if err != nil {
 		p.LastError = err
 		return err
@@ -276,7 +275,7 @@ func (p *PixelDING) SavePicture(name string, picture *PixelPicture, permissions 
 // ----------------------------------------------------------------------------------------------------------------------
 func (p *PixelDING) LoadPicture(name string) *PixelPicture {
 	x := PixelPicture{}
-	buf, err := ioutil.ReadFile(name)
+	buf, err := os.ReadFile(name)
 	if err != nil {
 		p.LastError = err
 		return nil
@@ -521,6 +520,85 @@ func RGB(r, g, b uint8) uint32 {
 	c <<= 8
 	c += uint32(b)
 	return c
+}
+
+func hueToRGB(p, q, t float64) float64 {
+	if t < 0 {
+		t += 1
+	}
+	if t > 1 {
+		t -= 1
+	}
+	if t < 1.0/6.0 {
+		return p + (q-p)*6*t
+	}
+	if t < 1.0/2.0 {
+		return q
+	}
+	if t < 2.0/3.0 {
+		return p + (q-p)*(2.0/3.0-t)*6
+	}
+	return p
+}
+
+// HSL helper to construct a 32bit color value from H,S,L values
+func HSL(h, s, l float64) uint32 {
+	var r, g, b float64
+
+	if s == 0 {
+		// Achromatic
+		r, g, b = l, l, l
+	} else {
+		var q float64
+		if l < 0.5 {
+			q = l * (1 + s)
+		} else {
+			q = l + s - l*s
+		}
+		p := 2*l - q
+		r = hueToRGB(p, q, h+1.0/3.0)
+		g = hueToRGB(p, q, h)
+		b = hueToRGB(p, q, h-1.0/3.0)
+	}
+
+	return RGB(uint8(r*255), uint8(g*255), uint8(b*255))
+}
+
+// HSV helper to construct a 32bit color value from H,S,V values
+// ----------------------------------------------------------------------------------------------------------------------
+func HSV(h, s, v float64) uint32 {
+	var r, g, b float64
+
+	h60 := h / 60.0
+	h60f := int(h60)
+	hi := h60f % 6
+	f := h60 - float64(h60f)
+	p := v * (1 - s)
+	q := v * (1 - f*s)
+	t := v * (1 - (1-f)*s)
+
+	switch hi {
+	case 0:
+		r, g, b = v, t, p
+	case 1:
+		r, g, b = q, v, p
+	case 2:
+		r, g, b = p, v, t
+	case 3:
+		r, g, b = p, q, v
+	case 4:
+		r, g, b = t, p, v
+	case 5:
+		r, g, b = v, p, q
+	}
+
+	return RGB(uint8(r*255), uint8(g*255), uint8(b*255))
+}
+
+// CMYK helper to construct a 32bit color value from H,S,V values
+// ----------------------------------------------------------------------------------------------------------------------
+func CMYK(c, m, y, k float64) uint32 {
+	return RGB(uint8(255*(1-c)*(1-k)), uint8(255*(1-m)*(1-k)), uint8(255*(1-y)*(1-k)))
 }
 
 // Color set the desired color for drawing
