@@ -593,8 +593,9 @@ pixi.Text(22,22,"The PixelDING", true)    //Using paint area coordinates,
 
 
 
-# Example
+# Example I animated analog clock
 ![](screenshots/clock.png)
+
 ````GO
 package main
 
@@ -681,3 +682,36 @@ func main() {
 }
 ````
 
+# Example II - Calculate PI
+![](screenshots/pi.png)
+````GO
+func approxPi() {
+	//https://en.wikipedia.org/wiki/Pi#Monte_Carlo_methods
+	mx := 50.0
+	my := 50.0
+	myPixi := pixelding.New(int(mx), int(my))
+	myPixi.Aspect(1, 0)
+	myPixi.ColorMode(pixelding.ModeTrueColor)
+	fmt.Print("\033[2J\033[3J\033[H")
+	drops := 2000000
+	inner := 0.0
+	for i := range drops {
+		x := rand.Float64()
+		y := rand.Float64()
+		if x*x+y*y <= 1.0 {
+			inner += 1.0
+			myPixi.Color(0x00ff00)
+		} else {
+			myPixi.Color(0xffffff)
+		}
+		myPixi.Pixel(int(x*mx), int(y*my), true)
+		if i%1000 == 0 {
+			fmt.Print("\033[3J\033[H")
+			myPixi.Render()
+			myPixi.Display()
+			myPixi.Clear()
+			fmt.Println(4.0 * inner / float64(drops))
+		}
+	}
+}
+````
